@@ -25,6 +25,7 @@ int main()
 	edges = vdg->ComputeVoronoiGraph(ver, minY, maxY);
 	delete vdg;
 	std::vector<sf::Vertex*> lines;
+
 	for (int i = 0; i < edges.size(); i++)
 	{
 		sf::Vertex* test = new sf::Vertex[2];
@@ -32,13 +33,9 @@ int main()
 		test[1] = sf::Vector2f((edges[i].VertexB.x), (edges[i].VertexB.y));
 		lines.push_back(test);
 	}
-	
 
 	sf::RenderWindow window(sf::VideoMode(500, 500), "SFML works!");
 	
-	sf::CircleShape shape(100.f);
-	shape.setFillColor(sf::Color::Green);
-
 	while (window.isOpen())
 	{
 		sf::Event event;
@@ -58,7 +55,6 @@ int main()
 		}
 
 		window.clear();
-		//window.draw(shape);
 		for(auto line : lines)
 			window.draw(line, 2, sf::Lines);
 		window.display();
