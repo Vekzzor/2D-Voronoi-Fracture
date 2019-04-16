@@ -76,7 +76,7 @@ vector<VEdge> Voronoi::ComputeVoronoiGraph(vector<VoronoiPoint*> p, double minY,
 			xmax = p[i]->x;
 
 		if (p[i]->y < ymin)
-			ymin = p[i]->y;
+			ymin = p[i]->y; 
 		else if (p[i]->y > ymax)
 			ymax = p[i]->y;
 	}
