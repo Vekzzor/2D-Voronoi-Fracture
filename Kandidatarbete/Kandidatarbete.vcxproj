@@ -123,10 +123,21 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Fortunes\Data Structures\BinaryTree.cpp" />
+    <ClCompile Include="Fortunes\Event\CircleEvent.cpp" />
+    <ClCompile Include="Fortunes\Event\Event.cpp" />
+    <ClCompile Include="Fortunes\Event\SIteEvent.cpp" />
+    <ClCompile Include="Fortunes\Fortunes.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="voronoi.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Fortunes\Data Structures\BinaryTree.h" />
+    <ClInclude Include="Fortunes\Data Structures\LinkedList.h" />
+    <ClInclude Include="Fortunes\Event\CircleEvent.h" />
+    <ClInclude Include="Fortunes\Event\Event.h" />
+    <ClInclude Include="Fortunes\Event\SiteEvent.h" />
+    <ClInclude Include="Fortunes\Fortunes.h" />
     <ClInclude Include="voronoi.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
