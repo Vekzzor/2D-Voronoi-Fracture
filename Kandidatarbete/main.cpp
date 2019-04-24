@@ -1,6 +1,10 @@
 
 #include <SFML/Graphics.hpp>
 #include "voronoi.h"
+#include <iostream>
+#include "Fortunes/Data Structures/BinTree.h"
+
+
 
 Voronoi* vdg;
 vector<VoronoiPoint*> ver;
@@ -16,8 +20,6 @@ int main()
 	{
 		ver.push_back(new VoronoiPoint(rand() % 500, rand() % 500));
 	}
-
-
 
 	vdg = new Voronoi();
 	double minY = 0;
@@ -35,7 +37,27 @@ int main()
 	}
 
 	sf::RenderWindow window(sf::VideoMode(500, 500), "SFML works!");
-	
+
+	BinTree<int> bT;
+
+	bT.AddNode(bT.GetRoot(), 50); 
+	bT.AddNode(bT.GetRoot(), 20); 
+	bT.AddNode(bT.GetRoot(), 70); 
+
+	int serachNum = 0;
+
+	std::cout << "Please enter the number you want to search for: " << std::endl; 
+	std::cin >> serachNum; 
+
+	if (bT.Search(bT.GetRoot(), serachNum))
+	{
+		std::cout << "Number " << serachNum << " was found!" << std::endl; 
+	}
+	else
+	{
+		std::cout << "Number " << serachNum << " was not found!" << std::endl; 
+	}
+
 	while (window.isOpen())
 	{
 		sf::Event event;
