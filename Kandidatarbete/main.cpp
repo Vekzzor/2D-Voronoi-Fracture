@@ -3,7 +3,7 @@
 #include "voronoi.h"
 #include <iostream>
 #include "Fortunes/Data Structures/BinTree.h"
-
+#include "Bowyer-Watson/Delunay.h"
 
 
 Voronoi* vdg;
@@ -21,6 +21,21 @@ int main()
 		ver.push_back(new VoronoiPoint(rand() % 500, rand() % 500));
 	}
 
+	vector<sf::Vector2f*> BWpoints;
+	for (int i = 0; i < 6; i++)
+	{
+		BWpoints.push_back(new sf::Vector2f(rand() % 400 + 50, rand() % 400 + 50));
+	}
+	/*BWpoints.push_back(new sf::Vector2f(50, 50));
+	BWpoints.push_back(new sf::Vector2f(400 + 50,50));
+	BWpoints.push_back(new sf::Vector2f(50, 400 + 50));
+	BWpoints.push_back(new sf::Vector2f(400 + 50, 400 + 50));*/
+
+	Delunay triangulation;
+	const std::vector<Triangle> triangles = triangulation.Triangulate(BWpoints);
+	std::cout << triangles.size() << " triangles generated\n";
+	std::vector<DEdge*> triEdges = triangulation.getEdges();
+
 	vdg = new Voronoi();
 	double minY = 0;
 	double maxY = 500;
@@ -28,13 +43,30 @@ int main()
 	delete vdg;
 	std::vector<sf::Vertex*> lines;
 
-	for (int i = 0; i < edges.size(); i++)
+	for (int i = 0; i < triEdges.size(); i++)
+	{
+		sf::Vertex* test = new sf::Vertex[2];
+		test[0] = sf::Vector2f((triEdges[i]->v1->x), (triEdges[i]->v1->y));
+		test[1] = sf::Vector2f((triEdges[i]->v2->x), (triEdges[i]->v2->y));
+		lines.push_back(test);
+	}
+
+	/*for (int i = 0; i < triangles.size(); i++)
+	{
+		sf::Vertex* test = new sf::Vertex[3];
+		test[0] = sf::Vector2f((triangles[i].v1->x), (triangles[i].v1->y));
+		test[1] = sf::Vector2f((triangles[i].v2->x), (triangles[i].v2->y));
+		test[2] = sf::Vector2f((triangles[i].v2->x), (triangles[i].v2->y));
+		lines.push_back(test);
+	}*/
+
+	/*for (int i = 0; i < edges.size(); i++)
 	{
 		sf::Vertex* test = new sf::Vertex[2];
 		test[0] = sf::Vector2f((edges[i].VertexA.x), (edges[i].VertexA.y));
 		test[1] = sf::Vector2f((edges[i].VertexB.x), (edges[i].VertexB.y));
 		lines.push_back(test);
-	}
+	}*/
 
 	sf::RenderWindow window(sf::VideoMode(500, 500), "SFML works!");
 
@@ -46,7 +78,7 @@ int main()
 
 	int serachNum = 0;
 
-	std::cout << "Please enter the number you want to search for: " << std::endl; 
+	/*std::cout << "Please enter the number you want to search for: " << std::endl; 
 	std::cin >> serachNum; 
 
 	if (bT.Search(bT.GetRoot(), serachNum))
@@ -56,7 +88,7 @@ int main()
 	else
 	{
 		std::cout << "Number " << serachNum << " was not found!" << std::endl; 
-	}
+	}*/
 
 	while (window.isOpen())
 	{
