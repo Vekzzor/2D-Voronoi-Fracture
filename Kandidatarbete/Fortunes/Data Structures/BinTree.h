@@ -73,6 +73,23 @@ public:
 		}
 	}
 
+	Node* FindMin(Node*& root)
+	{ 
+		bool minFound = false; 
+		while (!minFound)
+		{
+			if (root->left != nullptr)
+			{
+				root = root->left; 
+			}
+			else
+			{
+				minFound = true; 
+			}
+		}
+		return root; 
+	}
+
 	Node* GetNewNode(T element)
 	{
 		Node* newNode = new Node();
@@ -90,5 +107,52 @@ public:
 	Node*& GetRoot()
 	{
 		return m_root;
+	}
+
+	void Delete(Node*& root, T element)
+	{
+		if (root == nullptr)
+		{
+			std::cout << "Tree / Subtree is empty!" << std::endl; 
+		}
+		else if (element < root->element)
+		{
+			Delete(root->left, element);
+		}
+		else if(element > root->element)
+		{
+			Delete(root->right, element); 
+		}
+		else
+		{
+			//Node to delete has been found
+
+			//Case 1: No child node
+			if (root->left == nullptr && root->right == nullptr)
+			{
+				delete root;
+				root = nullptr; 
+			}
+			//Case 2: One child node
+			else if (root->left == nullptr)
+			{
+				Node* temp = root; 
+				root = root->right; 
+				delete temp; 
+			}
+			else if (root->right == nullptr)
+			{
+				Node* temp = root; 
+				root = root->left; 
+				delete temp; 
+			}
+			//Case 3: 2 child nodes
+			else
+			{
+				Node* temp = FindMin(root->right); 
+				root->element = temp->element; 
+				Delete(root->right, temp->element); 
+			}
+		} 
 	}
 };
