@@ -73,7 +73,7 @@ public:
 		}
 	}
 
-	Node* FindMin(Node*& root)
+	Node* FindMin(Node* root)
 	{ 
 		bool minFound = false; 
 		while (!minFound)
