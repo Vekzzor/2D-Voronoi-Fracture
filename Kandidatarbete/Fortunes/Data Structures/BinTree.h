@@ -14,26 +14,20 @@ public:
 		}
 		~Node()
 		{
-
 		}
 	};
 private:
-	int m_nrOfNodes;
-	int m_nrOfLevels;
-	Node* m_root = nullptr;
-	bool m_nodeInserted;
+	Node* m_root; 
 public:
 
 	BinTree()
 	{
-		m_nrOfNodes = 0;
-		m_nrOfLevels = 0;
-		m_nodeInserted = false;
+		m_root = nullptr; 
 	}
 	~BinTree()
 	{
 		//Travers through tree and delete.
-		delete m_root; 
+		DeleteRecursively(m_root); 
 	}
 
 	void AddNode(Node*& root, T element)
@@ -99,11 +93,6 @@ public:
 		return newNode;
 	}
 
-	void DrawTree()
-	{
-
-	}
-
 	Node*& GetRoot()
 	{
 		return m_root;
@@ -154,5 +143,27 @@ public:
 				Delete(root->right, temp->element); 
 			}
 		} 
+	}
+
+	//Pre order traversal
+	void DrawTree(Node* root)
+	{
+		if (root != nullptr)
+		{
+			std::cout << root->element << std::endl;
+			DrawTree(root->left);
+			DrawTree(root->right);
+		}
+		else
+		{
+			std::cout << "nullptr" << std::endl; 
+		}
+	}
+
+	void DeleteRecursively(Node*& root)
+	{
+		DeleteRecursively(root->left); 
+		DeleteRecursively(root->right); 
+		delete root; 
 	}
 };

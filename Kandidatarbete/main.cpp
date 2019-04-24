@@ -1,16 +1,21 @@
 
+#define _CRTDBG_MAP_ALLOC
+#include <stdlib.h>
+#include <crtdbg.h>
+
 #include <SFML/Graphics.hpp>
 #include "voronoi.h"
 #include <iostream>
 #include "Fortunes/Data Structures/BinTree.h"
 
-
-
 Voronoi* vdg;
 vector<VoronoiPoint*> ver;
 vector<VEdge> edges;
+
 int main()
 {
+	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+
 	//FORTUNES ALGORITHM
 	for (vector<VoronoiPoint*>::iterator i = ver.begin(); i != ver.end(); i++)
 		delete((*i));
@@ -83,6 +88,10 @@ int main()
 		{
 			std:cout << numDeleted << " was deleted successfully!" << std::endl; 
 		}
+
+		std::cout << "The tree now looks like this: " << std::endl; 
+
+		bT.DrawTree(bT.GetRoot()); 
 		
 		std::cout << "Do you want to stop the BinaryTree? (Y/N):"; 
 		std::cin >> stop; 
@@ -111,6 +120,5 @@ int main()
 			window.draw(line, 2, sf::Lines);
 		window.display();
 	}
-
 	return 0; 
 }
