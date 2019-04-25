@@ -1,11 +1,10 @@
 #include "Fortunes.h"
 
-Fortunes::Fortunes()
+Fortunes::Fortunes(sf::ConvexShape& shape, int nrOfSites)
 { 
-	//Add all initial site events
-	//addEvent(event1); 
-	//addEvent(...); 
-	//addEvent(...); 
+	//Initiate the sites
+	InitiateSites(shape, nrOfSites); 
+	//Create an empty binary tree storing Node structs
 }
 
 Fortunes::~Fortunes()
@@ -15,35 +14,47 @@ Fortunes::~Fortunes()
 
 void Fortunes::GenerateVoronoiDiagram(std::vector<Event>& seeds, int minY, int maxY)
 {
-	m_minY = minY; 
-	m_maxY = maxY; 
-
-	Event* currEvent = m_events.top(); 
-
-	//Handle site event
-	if (currEvent->GetType() == "SITE")
+	while (!m_eventPriority.empty())
 	{
-
-	}
-	//Handle circle event
-	else
-	{
-
-	}
+		Event* currEvent = m_eventPriority.top(); 
 	
+		//Check if Site event
+		if (currEvent->GetType() == "Site")
+		{
+			HandleSiteEvent(dynamic_cast<Site*>(currEvent)); 
+		}
+		//Check if Circle event
+		if (currEvent->GetType() == "CircleSite")
+		{
+			HandleCircleEvent(dynamic_cast<CircleSite*>(currEvent)->GetLeaf()); 
+		}
+	}
 }
 
-void Fortunes::HandleSiteEvent()
+//Do this only once. 
+void Fortunes::InitiateSites(sf::ConvexShape shape, int nrOfEvents)
+{
+	//Add initial sites inside the geometry. 
+	srand(time(NULL)); 
+	for (int i = 0; i < nrOfEvents; i++)
+	{
+		m_eventPriority.push(new Site(sf::Vector2f(shape.getOrigin().x + (rand() % shape.getTextureRect().width),
+			shape.getOrigin().y + (rand() % shape.getTextureRect().height)))); 
+	}
+}
+
+void Fortunes::HandleSiteEvent(Site* siteEvent)
+{
+	//Check if tree is empty
+	if (m_voronoiTree.GetRoot() == nullptr)
+	{
+		//Insert site into tree (new parabola)
+		m_voronoiTree.AddNode(m_voronoiTree.GetRoot(), siteEvent); 
+	}
+}
+
+void Fortunes::HandleCircleEvent(LeafNode* arc)
 {
 
 }
 
-void Fortunes::HandleCircleEvent()
-{
-
-}
-
-void Fortunes::addEvent(Event* eventToAdd)
-{
-	m_events.push(eventToAdd); 
-}

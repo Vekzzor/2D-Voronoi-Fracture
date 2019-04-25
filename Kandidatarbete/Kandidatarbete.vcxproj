@@ -132,6 +132,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Fortunes\Data Structures\BinTree.h" />
+    <ClInclude Include="Fortunes\Data Structures\DCEL.h" />
     <ClInclude Include="Fortunes\Data Structures\LinkedList.h" />
     <ClInclude Include="Fortunes\Event\CircleEvent.h" />
     <ClInclude Include="Fortunes\Event\Event.h" />
