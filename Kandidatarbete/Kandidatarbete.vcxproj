@@ -132,6 +132,7 @@
     <ClCompile Include="voronoi.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Bowyer-Watson\delaunay.hpp" />
     <ClInclude Include="Bowyer-Watson\Delunay.h" />
     <ClInclude Include="Fortunes\Data Structures\BinTree.h" />
     <ClInclude Include="Fortunes\Data Structures\DCEL.h" />
