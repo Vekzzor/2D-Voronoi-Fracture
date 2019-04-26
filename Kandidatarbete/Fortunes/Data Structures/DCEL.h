@@ -98,12 +98,13 @@ namespace HALF_EDGE
 	struct HE_Vertex 
 	{
 		HE_Edge *edge = nullptr;  /* rep->tail == this */
-		sf::Vector2f coords;
+		sf::Vector2f* coords = nullptr;
 	};
 
 	struct HE_Face 
 	{
 		HE_Edge *edge = nullptr;  /* rep->left == this */
+		sf::Vector2f circumCenter;
 	};
 
 	//struct Site : HE_Face
@@ -119,7 +120,7 @@ namespace HALF_EDGE
 		HE_Edge *prev = nullptr;  /* prev->next == this */
 		HE_Edge *twin = nullptr;  /* twin->twin == this */
 		HE_Face *face = nullptr;       /* prev->left == left && next->left == left */
-		HE_Vertex* vert = nullptr;
+		sf::Vector2f* vert = nullptr;
 
 		void setTwin(HE_Edge* newTwin) {
 			this->twin = newTwin;
@@ -136,15 +137,17 @@ namespace HALF_EDGE
 	};
 
 	//Traversing the edges around a face
-	void getFaceEdges(HE_Face* face)
+	void getFaceEdges(std::vector<HE_Edge*>& edgeList,HE_Face* face)
 	{
 		HE_Edge* start_Edge = face->edge;
 		HE_Edge* half_edge = start_Edge;
 		do
 		{
 			//Collect edge;
+			edgeList.push_back(half_edge);
 			half_edge = half_edge->next;
 		} while (half_edge != start_Edge);
+
 	}
 
 	//Traversing the edges around a vertex
@@ -159,12 +162,25 @@ namespace HALF_EDGE
 		} while (half_edge != start_Edge);
 	}
 
-	HE_Vertex* vertexNext(HE_Edge* half_edge)
+	void getFaceVertices(std::vector<sf::Vector2f*>& vertexList, HE_Face* face)
+	{
+		HE_Edge* start_Edge = face->edge;
+		HE_Edge* half_edge = start_Edge;
+		
+		do
+		{
+			//Collect edge;
+			vertexList.push_back(half_edge->vert);
+			half_edge = half_edge->next;
+		} while (half_edge != start_Edge);
+	}
+
+	/*HE_Vertex* vertexNext(HE_Edge* half_edge)
 	{
 		return half_edge->twin->next->vert;
 	}
 	HE_Vertex* vertexPrev(HE_Edge* half_edge)
 	{
 		return half_edge->prev->twin->vert;
-	}
+	}*/
 }

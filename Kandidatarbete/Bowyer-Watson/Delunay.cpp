@@ -11,21 +11,21 @@ Delunay::~Delunay()
 {
 }
 
-std::vector<Triangle>& Delunay::Triangulate(std::vector<sf::Vector2f>& points)
+std::vector<Triangle>& Delunay::Triangulate(std::vector<sf::Vector2f*>& points)
 {
 	_vertices = points;
 	// Determinate the super triangle
-	float minX = points[0].x;
-	float minY = points[0].y;
+	float minX = points[0]->x;
+	float minY = points[0]->y;
 	float maxX = minX;
 	float maxY = minY;
 
-	for (auto const& pt : points)
+	for (sf::Vector2f* pt : points)
 	{
-		minX = std::min(minX, pt.x);
-		maxX = std::max(maxX, pt.x);
-		minY = std::min(minY, pt.y);
-		maxY = std::max(maxY, pt.y);
+		minX = std::min(minX, pt->x);
+		maxX = std::max(maxX, pt->x);
+		minY = std::min(minY, pt->y);
+		maxY = std::max(maxY, pt->y);
 	}
 
 	const float dx = maxX - minX;
@@ -37,15 +37,17 @@ std::vector<Triangle>& Delunay::Triangulate(std::vector<sf::Vector2f>& points)
 	_triangles.clear();
 	_edges.clear();
 
-	const sf::Vector2f p1(midx - 20 * deltaMax, midy - deltaMax);
-	const sf::Vector2f p2(midx, midy + 20 * deltaMax);
-	const sf::Vector2f p3(midx + 20 * deltaMax, midy - deltaMax);
-
+	sf::Vector2f* p1 = new sf::Vector2f(midx - 20 * deltaMax, midy - deltaMax);
+	sf::Vector2f* p2 = new sf::Vector2f(midx, midy + 20 * deltaMax);
+	sf::Vector2f* p3 = new sf::Vector2f(midx + 20 * deltaMax, midy - deltaMax);
+	superTriangle.push_back(p1);
+	superTriangle.push_back(p2);
+	superTriangle.push_back(p3);
 	// Create a list of triangles, and add the supertriangle in it
 	_triangles.push_back({ p1, p2, p3 });
 	
 
-	for (auto const& pt : points)
+	for (sf::Vector2f* const pt : points)
 	{
 		
 		//std::cout << "_triangles contains " << _triangles.size() << " elements" << std::endl;
@@ -54,8 +56,8 @@ std::vector<Triangle>& Delunay::Triangulate(std::vector<sf::Vector2f>& points)
 		for (const Triangle& t : _triangles)
 		{
 			//std::cout << "Processing " << std::endl << *t << std::endl;
-			const auto dist = (t.circle.x - pt.x) * (t.circle.x - pt.x) +
-							  (t.circle.y - pt.y) * (t.circle.y - pt.y);
+			const auto dist = (t.circle.x - pt->x) * (t.circle.x - pt->x) +
+							  (t.circle.y - pt->y) * (t.circle.y - pt->y);
 			if ((dist - t.circle.radius) <= eps)
 			{
 				//std::cout << "Pushing bad triangle " << *t << std::endl;
@@ -103,10 +105,10 @@ std::vector<Triangle>& Delunay::Triangulate(std::vector<sf::Vector2f>& points)
 		erase_where(edges, is_duplicate);
 
 		/* Update triangulation. */
-		for (auto const& e : edges)
+		for (const DEdge &e : edges)
 		{
 
-			tmps.push_back({ e.v1, e.v2, pt });
+			tmps.push_back(Triangle( e.v1, e.v2, pt));
 		}
 
 		_triangles = tmps;
@@ -123,16 +125,20 @@ std::vector<Triangle>& Delunay::Triangulate(std::vector<sf::Vector2f>& points)
 			tri.edgeContainsVertex(p3)); };
 */
 	erase_where(_triangles, is_part_STriangle_Old);
-
-	for (auto const& t : _triangles)
+	int i = 0;
+	for (auto & t : _triangles)
 	{
+		if (t.orientation() == 1)
+			if (t.re_OrderEdges())
+				int k = 0;
+		i++;
+
 		_edges.push_back(t.e1);
 		_edges.push_back(t.e2);
 		_edges.push_back(t.e3);
-
-
 	}
 
+	
 	return _triangles;
 }
 
