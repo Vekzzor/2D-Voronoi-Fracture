@@ -59,5 +59,8 @@
     <ClInclude Include="Fortunes\Data Structures\DCEL.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="vmath.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

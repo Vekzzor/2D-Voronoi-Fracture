@@ -1,12 +1,10 @@
 
-#define _CRTDBG_MAP_ALLOC
-#include <stdlib.h>
-#include <crtdbg.h>
-
 #include <SFML/Graphics.hpp>
 #include "voronoi.h"
 #include <iostream>
 #include "Fortunes/Data Structures/BinTree.h"
+#include "vmath.h"
+#include <vector>
 
 Voronoi* vdg;
 vector<VoronoiPoint*> ver;
@@ -14,8 +12,6 @@ vector<VEdge> edges;
 
 int main()
 {
-	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
-
 	//FORTUNES ALGORITHM
 	for (vector<VoronoiPoint*>::iterator i = ver.begin(); i != ver.end(); i++)
 		delete((*i));
@@ -65,6 +61,32 @@ int main()
 		for(auto line : lines)
 			window.draw(line, 2, sf::Lines);
 		window.display();
+
+
+		float arrA[] = { 3,-5,4 };
+		float  arrB[] = { 2,6,5 };
+		float crossArr[] = { 0,0,0 }; 
+
+		std::cout << "Current vectors: " << std::endl; 
+		for (int i = 0; i < 3; i++)
+		{
+			std::cout << "arrA[" << i << "] : " << arrA[i] << std::endl; 
+			std::cout << "arrB[" << i << "] : " << arrB[i] << std::endl;
+		}
+		system("PAUSE"); 
+
+		sf::Vector3f* crossDone; 
+		crossDone = cross(arrA, arrB, crossArr);
+		
+		std::cout << "Result from the cross:" << std::endl; 
+		for (int i = 0; i < 3; i++)
+		{
+			std::cout << "X: " << crossDone->x << std::endl; 
+			std::cout << "Y: " << crossDone->y << std::endl;
+			std::cout << "Z: " << crossDone->z << std::endl;
+		}
+		delete crossDone; 
 	}
+	
 	return 0; 
 }

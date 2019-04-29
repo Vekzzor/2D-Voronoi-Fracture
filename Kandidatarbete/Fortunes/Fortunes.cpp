@@ -1,4 +1,6 @@
 #include "Fortunes.h"
+#include <cmath>
+
 
 Fortunes::Fortunes(sf::ConvexShape& shape, int nrOfSites)
 { 
@@ -26,7 +28,7 @@ void Fortunes::GenerateVoronoiDiagram(std::vector<Event>& seeds, int minY, int m
 		//Check if Circle event
 		if (currEvent->GetType() == "CircleSite")
 		{
-			HandleCircleEvent(dynamic_cast<CircleSite*>(currEvent)->GetLeaf()); 
+			//HandleCircleEvent(dynamic_cast<CircleSite*>(currEvent)->GetLeaf()); 
 		}
 	}
 }
@@ -53,8 +55,21 @@ void Fortunes::HandleSiteEvent(Site* siteEvent)
 	}
 }
 
-void Fortunes::HandleCircleEvent(LeafNode* arc)
+bool Fortunes::findCircleCenter(const sf::Vector2f & posA, const sf::Vector2f & posB, const sf::Vector2f & posC, sf::Vector2f & center)
 {
+	//Get the normalized vectors
+	sf::Vector2f AB = (posB - posA); 
+	sf::Vector2f BC = (posC - posB); 
+	sf::Vector2f normAB = AB / sqrt(pow(AB.x, 2) + pow(AB.y, 2)); 
+	sf::Vector2f normBC = BC / sqrt(pow(BC.x, 2) + pow(BC.y, 2)); 
 
+	//double cross = 
+	
+	return true;
 }
+
+//void Fortunes::HandleCircleEvent(LeafNode* arc)
+//{
+//
+//}
 

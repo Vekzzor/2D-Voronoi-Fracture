@@ -9,7 +9,8 @@
 class Fortunes
 {
 	//Tell the compiler that this struct exists so that it can be used everywhere
-	struct LeafNode; 
+	struct Site;  
+	struct CircleSite; 
 	
 private: 
 	struct Event
@@ -52,7 +53,10 @@ private:
 	struct BTNode
 	{
 	private:
-
+		Site* m_siteA = nullptr; 
+		Site* m_siteB = nullptr; 
+		CircleSite* m_circleEvent = nullptr; 
+		DCEL::Half_edge* m_halfEdge = nullptr; 
 	public:
 		BTNode()
 		{
@@ -61,6 +65,15 @@ private:
 		virtual ~BTNode()
 		{
 
+		}
+
+		bool operator<(const BTNode& otherNode)
+		{
+		/*	bool isLess = false; 
+			if (otherNode.m_siteA->GetPosition().x < )
+			{
+
+			}*/
 		}
 	};
 
@@ -94,8 +107,7 @@ public:
 
 	struct CircleSite : public Event
 	{
-	private:
-		LeafNode* m_leaf; 
+	private: 
 	public:
 		CircleSite(sf::Vector2f position) : Event(position)
 		{
@@ -110,59 +122,13 @@ public:
 		{
 			return "CircleSite"; 
 		}
-
-		LeafNode* GetLeaf()
-		{
-			return m_leaf; 
-		}
 	};
-
-	////////////////////////////////////////////////////////////////////////BST STRUCTURES/////////////////////////////////////////////////////////////////////////////////
-
-	//These keep track of the active arcs. 
-	struct LeafNode : public BTNode
-	{
-	private:
-		Site* m_activeParabola;
-		CircleSite* m_circleSite; 
-	public:
-		LeafNode(Site* activeParabola)
-		{
-			m_activeParabola = activeParabola;
-			m_circleSite = nullptr; 
-		}
-	};
-
-	//These keep track of the Voronoi diagram breakpoints (The edges of the Voronoi diagram)
-	struct BreakPoint : public BTNode
-	{
-	private:
-		Site* m_breakpoint[2];
-		//This is the new bisector created from the brekpoint
-		DCEL::Half_edge* m_halfEdge; 
-	public:
-		BreakPoint(Site* siteA, Site* siteB)
-		{
-			if (siteA->GetPosition().x < siteB->GetPosition().x)
-			{
-				m_breakpoint[0] = siteA; 
-				m_breakpoint[1] = siteB; 
-			}
-			else
-			{
-				m_breakpoint[0] = siteB;
-				m_breakpoint[1] = siteA; 
-			}
-			//TODO : MAKE SURE TO USE THIS CORRECTLY!
-			m_halfEdge = new DCEL::Half_edge();
-		}
-	};
-	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	void GenerateVoronoiDiagram(std::vector<Event>& seeds, int minY, int maxY); 
 
 	void InitiateSites(sf::ConvexShape shape,int nrOfEvents); 
 	void HandleSiteEvent(Site* siteEvent); 
-	void HandleCircleEvent(LeafNode* arc);
+	//void HandleCircleEvent(LeafNode* arc);
+	bool findCircleCenter(const sf::Vector2f &posA, const sf::Vector2f &posB, const sf::Vector2f &posC, sf::Vector2f& center);
 };
 
