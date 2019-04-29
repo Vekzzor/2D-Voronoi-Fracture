@@ -11,7 +11,7 @@ Delunay::~Delunay()
 {
 }
 
-std::vector<Triangle>& Delunay::Triangulate(std::vector<sf::Vector2f*>& points)
+std::vector<Triangle>& Delunay::Triangulate(std::vector<DVertex*>& points)
 {
 	_vertices = points;
 	// Determinate the super triangle
@@ -37,17 +37,17 @@ std::vector<Triangle>& Delunay::Triangulate(std::vector<sf::Vector2f*>& points)
 	_triangles.clear();
 	_edges.clear();
 
-	sf::Vector2f* p1 = new sf::Vector2f(midx - 20 * deltaMax, midy - deltaMax);
-	sf::Vector2f* p2 = new sf::Vector2f(midx, midy + 20 * deltaMax);
-	sf::Vector2f* p3 = new sf::Vector2f(midx + 20 * deltaMax, midy - deltaMax);
+	DVertex* p1 = new DVertex(midx - 20 * deltaMax, midy - deltaMax);
+	DVertex* p2 = new DVertex(midx, midy + 20 * deltaMax);
+	DVertex* p3 = new DVertex(midx + 20 * deltaMax, midy - deltaMax);
 	superTriangle.push_back(p1);
 	superTriangle.push_back(p2);
 	superTriangle.push_back(p3);
 	// Create a list of triangles, and add the supertriangle in it
 	_triangles.push_back({ p1, p2, p3 });
 	
-
-	for (sf::Vector2f* const pt : points)
+	int pointIndex = 0;
+	for (DVertex* const pt : points)
 	{
 		
 		//std::cout << "_triangles contains " << _triangles.size() << " elements" << std::endl;
@@ -62,9 +62,8 @@ std::vector<Triangle>& Delunay::Triangulate(std::vector<sf::Vector2f*>& points)
 			{
 				//std::cout << "Pushing bad triangle " << *t << std::endl;
 				//t.isBad = true;
-				edges.push_back(t.e1);
-				edges.push_back(t.e2);
-				edges.push_back(t.e3);
+				for(int i = 0; i < 3; i++)
+					edges.push_back(t.e[i]);
 			}
 			else
 			{
@@ -128,104 +127,15 @@ std::vector<Triangle>& Delunay::Triangulate(std::vector<sf::Vector2f*>& points)
 	int i = 0;
 	for (auto & t : _triangles)
 	{
-		if (t.orientation() == 1)
+		if (t.orientation() == 2)
 			if (t.re_OrderEdges())
 				int k = 0;
 		i++;
 
-		_edges.push_back(t.e1);
-		_edges.push_back(t.e2);
-		_edges.push_back(t.e3);
+		for (int k = 0; k < 3; k++)
+			_edges.push_back(t.e[i]);
 	}
 
 	
 	return _triangles;
 }
-
-//Triangle::Triangle(sf::Vector2f * p1, sf::Vector2f * p2, sf::Vector2f * p3)
-//{
-//	this->v1 = p1;
-//	this->v2 = p2;
-//	this->v3 = p3;
-//	if (this->IsCounterClockwise(p1, p2, p3))
-//	{
-//		e1 = new DEdge(p1, p2);
-//		e2 = new DEdge(p2, p3);
-//		e3 = new DEdge(p3, p1);
-//	}
-//	else
-//	{
-//		e1 = new DEdge(p1, p3);
-//		e2 = new DEdge(p3, p2);
-//		e3 = new DEdge(p2, p1);
-//	}
-//
-//}
-
-
-
-//void Triangle::UpdateCircumCircle()
-//{
-//	sf::Vector2f* p0 = this->v1;
-//	sf::Vector2f* p1 = this->v1;
-//	sf::Vector2f* p2 = this->v1;
-//	float dA = p0->x * p0->x + p0->y * p0->y;
-//	float dB = p1->x * p1->x + p1->y * p1->y;
-//	float dC = p2->x * p2->x + p2->y * p2->y;
-//
-//	float aux1 = (dA * (p2->y - p1->y) + dB * (p0->y - p2->y) + dC * (p1->y - p0->y));
-//	float aux2 = -(dA * (p2->x - p1->x) + dB * (p0->x - p2->x) + dC * (p1->x - p0->x));
-//	float div = (2 * (p0->x * (p2->y - p1->y) + p1->x * (p0->y - p2->y) + p2->x * (p1->y - p0->y)));
-//
-//	if (div == 0)
-//	{
-//		return;
-//	}
-//
-//	sf::Vector2f center(aux1 / div, aux2 / div);
-//	Circumcenter = center;
-//	RadiusSquared = (center.x - p0->x) * (center.x - p0->x) + (center.y - p0->y) * (center.y - p0->y);
-//}
-
-//void Triangle::UpdateCircumCircle()
-//{
-//	sf::Vector2f p0 = this->e1->v1;
-//	sf::Vector2f p1 = this->e2->v1;
-//	sf::Vector2f p2 = this->e3->v1;
-//	float dA = p0.x * p0.x + p0.y * p0.y;
-//	float dB = p1.x * p1.x + p1.y * p1.y;
-//	float dC = p2.x * p2.x + p2.y * p2.y;
-//
-//	float aux1 = (dA * (p2.y - p1.y) + dB * (p0.y - p2.y) + dC * (p1.y - p0.y));
-//	float aux2 = -(dA * (p2.x - p1.x) + dB * (p0.x - p2.x) + dC * (p1.x - p0.x));
-//	float div = (2 * (p0.x * (p2.y - p1.y) + p1.x * (p0.y - p2.y) + p2.x * (p1.y - p0.y)));
-//
-//	if (div == 0)
-//	{
-//		return;
-//	}
-//
-//	sf::Vector2f center(aux1 / div, aux2 / div);
-//	Circumcenter = center;
-//	RadiusSquared = (center.x - p0.x) * (center.x - p0.x) + (center.y - p0.y) * (center.y - p0.y);
-//}
-
-//bool almost_equal(float x, float y, int ulp)
-//{
-//	// the machine epsilon has to be scaled to the magnitude of the values used
-//	// and multiplied by the desired precision in ULPs (units in the last place)
-//	return fabs(x - y) <= std::numeric_limits<float>::epsilon() * fabs(x + y) * ulp
-//		// unless the result is subnormal
-//		|| fabs(x - y) < std::numeric_limits<float>::min();
-//}
-//
-//bool almost_equalVec(const sf::Vector2f & v1, const sf::Vector2f & v2, int ulp)
-//{
-//	return almost_equal(v1.x, v2.x, ulp) && almost_equal(v1.y, v2.y, ulp);
-//}
-//
-//bool almost_equalEdge(const DEdge & e1, const DEdge & e2)
-//{
-//	return	(almost_equalVec(e1.v1, e2.v1) && almost_equalVec(e1.v2, e2.v2)) ||
-//		(almost_equalVec(e1.v1, e2.v2) && almost_equalVec(e1.v2, e2.v1));
-//}

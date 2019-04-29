@@ -5,11 +5,11 @@
 
 
 constexpr double eps = 1e-4;
-
+struct DVertex;
 class DEdge
 {
 public:
-	DEdge(sf::Vector2f* const& _v1, sf::Vector2f* const& _v2) : v1{ _v1 }, v2{ _v2 } {}
+	DEdge(DVertex* const& _v1, DVertex* const& _v2) : v1{ _v1 }, v2{ _v2 } {}
 	DEdge(const DEdge &e)
 	{
 		this->v1 = e.v1;
@@ -30,8 +30,12 @@ public:
 		return ((other.v1 == v1 && other.v2 == v2) ||
 			(other.v1 == v2 && other.v2 == v1));
 	}
-	sf::Vector2f* v1;
-	sf::Vector2f* v2;
+	void flipEdges()
+	{
+		std::swap(v1, v2);
+	}
+	DVertex* v1;
+	DVertex* v2;
 private:
 	//int refCount = 0;
 };
@@ -41,6 +45,21 @@ struct DCircle {
 	DCircle() = default;
 };
 
+struct DVertex : public sf::Vector2f {
+	DVertex(int x, int y, int index = -1) : sf::Vector2f(x,y)
+	{
+		arrayIndex = index;
+	}
+	DVertex(sf::Vector2f vector, int index = -1) : sf::Vector2f(vector)
+	{
+		arrayIndex = index;
+	}
+	sf::Vector2f getCoordinates()
+	{
+		return sf::Vector2f(x, y);
+	}
+	int arrayIndex = -1;
+};
 class Triangle
 {
 private:
@@ -53,20 +72,16 @@ private:
 		return (cmpf(A.x, B.x) && cmpf(A.y, B.y));
 	}
 public:
-	DEdge e1;
-	DEdge e2;
-	DEdge e3;
-	sf::Vector2f* v1;
-	sf::Vector2f* v2;
-	sf::Vector2f* v3;
+	DEdge e[3];
+	DVertex* v1;
+	DVertex* v2;
+	DVertex* v3;
 	DCircle circle;
-	Triangle(sf::Vector2f* _v1, sf::Vector2f* _v2, sf::Vector2f* _v3)
+	Triangle(DVertex* _v1, DVertex* _v2, DVertex* _v3)
 	  : v1{ _v1 },
 		v2{ _v2 },
 		v3{ _v3 },
-		e1{ _v2, _v1 },
-		e2{ _v3, _v2 },
-		e3{ _v1, _v3 },
+		e{ {_v2, _v1}, { _v3, _v2 }, { _v1, _v3 } },
 		circle{}
 	{
 
@@ -99,9 +114,9 @@ public:
 	}
 	void operator=(const Triangle &t)
 	{
-		this->e1 = t.e1;
-		this->e2 = t.e2;
-		this->e3 = t.e3;
+		this->e[0] = t.e[0];
+		this->e[1] = t.e[1];
+		this->e[2] = t.e[2];
 
 		this->v1 = t.v1;
 		this->v2 = t.v2;
@@ -112,7 +127,7 @@ public:
 	}
 	bool operator==(const Triangle &t)
 	{
-		return (this->e1 == t.e1 && this->e2 == t.e2 && this->e3 == t.e3);
+		return (this->e[0] == t.e[0] && this->e[1] == t.e[1] && this->e[2] == t.e[2]);
 	}
 
 	int orientation()
@@ -128,11 +143,11 @@ public:
 	int edgeOrientation()
 	{
 		int val = 0;
-		if (e1.v2 == e2.v1 && e2.v2 == e3.v1 && e3.v2 == e1.v1)
+		if (e[0].v2 == e[1].v1 && e[1].v2 == e[2].v1 && e[2].v2 == e[0].v1)
 		{
 			val = 1;
 		}
-		else if (e1.v2 == e3.v1 && e3.v2 == e2.v1 && e2.v2 == e1.v1)
+		else if (e[0].v2 == e[2].v1 && e[2].v2 == e[1].v1 && e[1].v2 == e[0].v1)
 		{
 			val = 2;
 		}
@@ -146,18 +161,22 @@ public:
 			(v3->x - v1->x) * (v2->y - v1->y);
 		return result;
 	}
+	void flipOrientation()
+	{
+		std::swap(v1, v2);
+	}
 	bool re_OrderEdges()
 	{
 		std::swap(v1, v2);
 
-		e1.v1 = v2;
-		e1.v2 = v1;
+		e[0].v1 = v2;
+		e[0].v2 = v1;
 
-		e2.v1 = v3;
-		e2.v2 = v2;
+		e[1].v1 = v3;
+		e[1].v2 = v2;
 
-		e3.v1 = v1;
-		e3.v2 = v3;
+		e[2].v1 = v1;
+		e[2].v2 = v3;
 
 	
 
@@ -206,17 +225,17 @@ class Delunay
 private:
 	std::vector<Triangle> _triangles;
 	std::vector<DEdge> _edges;
-	std::vector<sf::Vector2f*> _vertices;
-	std::vector<sf::Vector2f*> superTriangle;
+	std::vector<DVertex*> _vertices;
+	std::vector<DVertex*> superTriangle;
 public:
 	Delunay();
 	~Delunay();
 
-	std::vector<Triangle>& Triangulate(std::vector<sf::Vector2f*>& points);
+	std::vector<Triangle>& Triangulate(std::vector<DVertex*>& points);
 
 	const std::vector<Triangle>& getTriangles() const { return _triangles; };
 	const std::vector<DEdge>& getEdges() const { return _edges; };
-	const std::vector<sf::Vector2f*>& getVertices() const { return _vertices; };
-	const std::vector<sf::Vector2f*>& getSuperTriangle() const { return superTriangle; };
+	const std::vector<DVertex*>& getVertices() const { return _vertices; };
+	const std::vector<DVertex*>& getSuperTriangle() const { return superTriangle; };
 };
 

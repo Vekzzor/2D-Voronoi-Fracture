@@ -98,7 +98,7 @@ namespace HALF_EDGE
 	struct HE_Vertex 
 	{
 		HE_Edge *edge = nullptr;  /* rep->tail == this */
-		sf::Vector2f* coords = nullptr;
+		sf::Vector2f* point = nullptr;
 	};
 
 	struct HE_Face 
@@ -107,20 +107,13 @@ namespace HALF_EDGE
 		sf::Vector2f circumCenter;
 	};
 
-	//struct Site : HE_Face
-	//{
-	//	std::size_t index;
-	//	sf::Vector2f point; //CircumCenter
-	//	HE_Face* face = nullptr;
-	//};
-
 	struct HE_Edge
 	{
 		HE_Edge *next = nullptr;  /* next->prev == this */
 		HE_Edge *prev = nullptr;  /* prev->next == this */
 		HE_Edge *twin = nullptr;  /* twin->twin == this */
-		HE_Face *face = nullptr;       /* prev->left == left && next->left == left */
-		sf::Vector2f* vert = nullptr;
+		HE_Face *face = nullptr;  /* prev->left == left && next->left == left */
+		HE_Vertex* vert = nullptr;
 
 		void setTwin(HE_Edge* newTwin) {
 			this->twin = newTwin;
@@ -150,6 +143,63 @@ namespace HALF_EDGE
 
 	}
 
+	void getFaceVertices(std::vector<HE_Vertex*>& vertexList, HE_Face* face)
+	{
+		HE_Edge* start_Edge = face->edge;
+		HE_Edge* half_edge = start_Edge;
+		do
+		{
+			//Collect vertex;
+			vertexList.push_back(half_edge->vert);
+			half_edge = half_edge->next;
+		} while (half_edge != start_Edge);
+	}
+
+	//void getPolygon(HE_Vertex* vertex)
+	//{
+	//	HE_Edge* start_Edge = vertex->edge;
+	//	HE_Edge* half_edge = start_Edge;
+	//	bool finished = false;
+	//	while (finished)
+	//	{
+	//		HE_Edge* face_Start_Edge = start_Edge;
+	//		HE_Edge* face_Half_edge = face_Start_Edge;
+	//		do
+	//		{
+	//			//Collect edge;
+	//			face_Half_edge = face_Half_edge->next;
+	//		} while (face_Half_edge != face_Start_Edge);
+
+	//		start_Edge = start_Edge->twin->next;
+	//		half_edge = start_Edge;
+	//	}
+	//	
+
+	//}
+
+	bool getPolygon(std::vector<sf::Vector2f>& siteList, HE_Vertex* vertex)
+	{
+		bool hasNeighbor = true;
+		HE_Edge* start_Edge = vertex->edge;
+		HE_Edge* half_edge = start_Edge;
+		do
+		{
+			//sf::Vector2f* start = half_edge->vert->point;
+			//sf::Vector2f* end = half_edge->next->vert->point;
+
+			//sf::Vector2f midPoint((start->x + end->x) / 2, (start->y + end->y) / 2);
+			if (half_edge->twin == nullptr)
+			{
+				hasNeighbor = false;
+				break;
+			}
+			//Collect edge
+			siteList.push_back(half_edge->face->circumCenter);
+			half_edge = half_edge->twin->next;
+		} while (half_edge != start_Edge);
+		return hasNeighbor;
+	}
+
 	//Traversing the edges around a vertex
 	void getVertexEdges(HE_Vertex* vertex)
 	{
@@ -162,25 +212,23 @@ namespace HALF_EDGE
 		} while (half_edge != start_Edge);
 	}
 
-	void getFaceVertices(std::vector<sf::Vector2f*>& vertexList, HE_Face* face)
+	void getVertexFaces(HE_Vertex* vertex)
 	{
-		HE_Edge* start_Edge = face->edge;
+		HE_Edge* start_Edge = vertex->edge;
 		HE_Edge* half_edge = start_Edge;
-		
 		do
 		{
-			//Collect edge;
-			vertexList.push_back(half_edge->vert);
-			half_edge = half_edge->next;
+			//Collect edge
+			half_edge = half_edge->twin->next;
 		} while (half_edge != start_Edge);
 	}
 
-	/*HE_Vertex* vertexNext(HE_Edge* half_edge)
+	HE_Vertex* vertexNext(HE_Edge* half_edge)
 	{
 		return half_edge->twin->next->vert;
 	}
 	HE_Vertex* vertexPrev(HE_Edge* half_edge)
 	{
 		return half_edge->prev->twin->vert;
-	}*/
+	}
 }
