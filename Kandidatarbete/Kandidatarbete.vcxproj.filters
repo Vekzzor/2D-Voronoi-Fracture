@@ -59,7 +59,7 @@
     <ClInclude Include="Fortunes\Data Structures\DCEL.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="vmath.h">
+    <ClInclude Include="Fortunes\Math\vmath.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -3,8 +3,8 @@
 #include "voronoi.h"
 #include <iostream>
 #include "Fortunes/Data Structures/BinTree.h"
-#include "vmath.h"
 #include <vector>
+#include "Fortunes/Fortunes.h"
 
 Voronoi* vdg;
 vector<VoronoiPoint*> ver;
@@ -39,6 +39,13 @@ int main()
 
 	sf::RenderWindow window(sf::VideoMode(500, 500), "SFML works!");
 
+	sf::ConvexShape shape; 
+	shape.setPointCount(20); 
+	shape.setTextureRect(sf::IntRect(0, 0, 10, 10)); 
+	Fortunes testFortune(shape,10); 
+	testFortune.findCircleCenter(sf::Vector2f(34, 33), sf::Vector2f(3, 5), sf::Vector2f(35,12)); 
+
+
 	while (window.isOpen())
 	{
 		sf::Event event;
@@ -62,9 +69,9 @@ int main()
 			window.draw(line, 2, sf::Lines);
 		window.display();
 
-
-		float arrA[] = { 3,-5,4 };
-		float  arrB[] = { 2,6,5 };
+/*
+		float arrA[] = { 3,-5,0 };
+		float  arrB[] = { 2,6,0 };
 		float crossArr[] = { 0,0,0 }; 
 
 		std::cout << "Current vectors: " << std::endl; 
@@ -85,7 +92,7 @@ int main()
 			std::cout << "Y: " << crossDone->y << std::endl;
 			std::cout << "Z: " << crossDone->z << std::endl;
 		}
-		delete crossDone; 
+		delete crossDone; */
 	}
 	
 	return 0; 

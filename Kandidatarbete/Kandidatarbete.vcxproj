@@ -146,7 +146,7 @@
     <ClInclude Include="Fortunes\Event\Event.h" />
     <ClInclude Include="Fortunes\Event\SiteEvent.h" />
     <ClInclude Include="Fortunes\Fortunes.h" />
-    <ClInclude Include="vmath.h" />
+    <ClInclude Include="Fortunes\Math\vmath.h" />
     <ClInclude Include="voronoi.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

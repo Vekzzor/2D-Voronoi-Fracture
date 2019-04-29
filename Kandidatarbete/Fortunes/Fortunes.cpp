@@ -1,5 +1,7 @@
 #include "Fortunes.h"
 #include <cmath>
+#include "Math/vmath.h"
+#include <iostream>
 
 
 Fortunes::Fortunes(sf::ConvexShape& shape, int nrOfSites)
@@ -55,7 +57,7 @@ void Fortunes::HandleSiteEvent(Site* siteEvent)
 	}
 }
 
-bool Fortunes::findCircleCenter(const sf::Vector2f & posA, const sf::Vector2f & posB, const sf::Vector2f & posC, sf::Vector2f & center)
+bool Fortunes::findCircleCenter(const sf::Vector2f & posA, const sf::Vector2f & posB, const sf::Vector2f & posC)
 {
 	//Get the normalized vectors
 	sf::Vector2f AB = (posB - posA); 
@@ -63,7 +65,17 @@ bool Fortunes::findCircleCenter(const sf::Vector2f & posA, const sf::Vector2f & 
 	sf::Vector2f normAB = AB / sqrt(pow(AB.x, 2) + pow(AB.y, 2)); 
 	sf::Vector2f normBC = BC / sqrt(pow(BC.x, 2) + pow(BC.y, 2)); 
 
-	//double cross = 
+	float crossArr[] = { 0,0,0 };
+	float AB3D[] = {normAB.x, normAB.y,0 }; 
+	float BC3D[] = {normBC.x, normBC.y, 0 }; 
+
+	sf::Vector3f* crossRes; 
+	crossRes = cross(AB3D, BC3D, crossArr); 
+
+	std::cout << "Cross results from 2D vectors: "; 
+	std::cout << crossRes->z << std::endl; 
+	
+	delete crossRes; 
 	
 	return true;
 }

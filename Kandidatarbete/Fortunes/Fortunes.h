@@ -2,7 +2,6 @@
 #include <vector>
 #include <queue>
 #include "SFML/Graphics.hpp"
-#include "Data Structures/DCEL.h"
 #include "Data Structures/BinTree.h"
 #include <random>
 
@@ -56,7 +55,7 @@ private:
 		Site* m_siteA = nullptr; 
 		Site* m_siteB = nullptr; 
 		CircleSite* m_circleEvent = nullptr; 
-		DCEL::Half_edge* m_halfEdge = nullptr; 
+		//DCEL::Half_edge* m_halfEdge = nullptr; 
 	public:
 		BTNode()
 		{
@@ -129,6 +128,6 @@ public:
 	void InitiateSites(sf::ConvexShape shape,int nrOfEvents); 
 	void HandleSiteEvent(Site* siteEvent); 
 	//void HandleCircleEvent(LeafNode* arc);
-	bool findCircleCenter(const sf::Vector2f &posA, const sf::Vector2f &posB, const sf::Vector2f &posC, sf::Vector2f& center);
+	bool findCircleCenter(const sf::Vector2f &posA, const sf::Vector2f &posB, const sf::Vector2f &posC);
 };
 
