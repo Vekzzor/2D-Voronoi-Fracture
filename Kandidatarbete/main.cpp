@@ -10,6 +10,9 @@
 Voronoi* vdg;
 vector<VoronoiPoint*> ver;
 vector<VEdge> edges;
+static const int MINSIZE = 150; //55
+static const int MAXSIZE = 400; //390
+static const int SEEDS = 100;
 
 #define CUSTOM 1;
 
@@ -25,17 +28,34 @@ struct VoronoiEdge
 {
 	 sf::Vector2f center;
 
-	float ma = (p2->y - p1->y) / (p2->x - p1->x);
-	float mb = (p3->y - p2->y) / (p3->x - p2->x);
-	if (isinf(mb))
+	 const float ax = p2->x - p1->x;
+	 const float ay = p2->y - p1->y;
+	 const float bx = p3->x - p1->x;
+	 const float by = p3->y - p1->y;
+
+	 const float m = p2->x * p2->x - p1->x * p1->x + p2->y * p2->y - p1->y * p1->y;
+	 const float u = p3->x * p3->x - p1->x * p1->x + p3->y * p3->y - p1->y * p1->y;
+	 const float s = 1. / (2. * (ax * by - ay * bx));
+
+	center.x = ((p3->y - p1->y) * m + (p1->y - p2->y) * u) * s;
+	center.y = ((p1->x - p3->x) * m + (p2->x - p1->x) * u) * s;
+
+	 /*const float dx = v1->x - this->circle.x;
+	 const float dy = v1->y - this->circle.y;
+	 this->circle.radius = dx * dx + dy * dy;*/
+
+	if (isinf(s))
 	{
-		mb = 0;
+		int lul = 0;
 	}
+
+	/*float ma = (p2->y - p1->y) / (p2->x - p1->x);
+	float mb = (p3->y - p2->y) / (p3->x - p2->x);
 
 	center.x = (ma * mb * (p1->y - p3->y) + mb * (p1->x + p2->x) - ma * (p2->x + p3->x)) / (2 * (mb - ma));
 
 	center.y = (-1 / ma) * (center.x - (p1->x + p2->x) / 2) + (p1->y + p2->y) / 2;
-
+*/
 	return center;
 }
 
@@ -54,12 +74,11 @@ void addVoronoiEdge(HALF_EDGE::HE_Edge* e, sf::Vector2f center, std::vector<Voro
 	sf::Vector2f* v2 = eNeighbor->next->vert->point;
 	sf::Vector2f* v3 = eNeighbor->next->next->vert->point;
 
-	//The .XZ() is an extension method that removes the y value of a vector3 so it becomes a vector2
 	sf::Vector2f voronoiVertexNeighbor = eNeighbor->face->circumCenter;
 
 	//Create a new voronoi edge between the voronoi vertices
 	voronoiEdges.push_back(
-		VoronoiEdge(center, voronoiVertexNeighbor, *e->prev->vert->point));
+		VoronoiEdge(center, voronoiVertexNeighbor, *e->vert->point));
 }
 
 int main()
@@ -70,25 +89,25 @@ int main()
 		delete((*i));
 	ver.clear();
 	edges.clear();
-	for (int i = 0; i < 100; i++)
+	for (int i = 0; i < SEEDS; i++)
 	{
-		ver.push_back(new VoronoiPoint(rand() % 390 + 55, rand() % 390 + 55));
+		ver.push_back(new VoronoiPoint(rand() % MAXSIZE +MINSIZE, rand() % MAXSIZE +MINSIZE));
 	}
 
 	vector<DVertex*> BWpoints;
 	std::vector<delaunay::Point<float>> points;
-	for (size_t i = 0; i < 200; i++)
+	for (size_t i = 0; i < SEEDS; i++)
 	{
-		float x = float(rand() % 390 + 55);
-		float y = float(rand() % 390 + 55);
+		float x = float(rand() % MAXSIZE + MINSIZE);
+		float y = float(rand() % MAXSIZE + MINSIZE);
 		points.push_back(delaunay::Point<float>(x,y));
 		BWpoints.push_back(new DVertex(x, y, i));
 	}
 	
-	BWpoints.push_back(new DVertex(50, 50, BWpoints.size()));
-	BWpoints.push_back(new DVertex(400 + 50, 50, BWpoints.size()));
-	BWpoints.push_back(new DVertex(400 + 50, 400 + 50, BWpoints.size()));
-	BWpoints.push_back(new DVertex(50, 400 + 50, BWpoints.size()));
+	BWpoints.push_back(new DVertex(MINSIZE, MINSIZE, BWpoints.size()));
+	BWpoints.push_back(new DVertex(MAXSIZE + MINSIZE, MINSIZE, BWpoints.size()));
+	BWpoints.push_back(new DVertex(MAXSIZE + MINSIZE, MAXSIZE + MINSIZE, BWpoints.size()));
+	BWpoints.push_back(new DVertex(MINSIZE, MAXSIZE + MINSIZE, BWpoints.size()));
 
 #if CUSTOM
 
@@ -96,11 +115,11 @@ int main()
 	const std::vector<Triangle> triangles = triangulation.Triangulate(BWpoints);
 	std::cout << triangles.size() << " triangles generated\n";
 
-	/*for (auto& vert : triangulation.getSuperTriangle())
+	for (auto& vert : triangulation.getSuperTriangle())
 	{
 		vert->arrayIndex = BWpoints.size();
 		BWpoints.push_back(vert);
-	}*/
+	}
 
 	std::vector<pair<unsigned int, unsigned int>> EdgeIndex;
 	
@@ -129,8 +148,6 @@ int main()
 		EdgeIndex.push_back(make_pair(triangle.v3->arrayIndex, triangle.v1->arrayIndex));
 	}
 
-
-
 	map< pair<unsigned int, unsigned int>, HALF_EDGE::HE_Edge* > Edges;
 	std::vector<HALF_EDGE::HE_Vertex*> vertexList;
 	for (auto &point : BWpoints)
@@ -146,7 +163,7 @@ int main()
 		const int offset = i * 3;
 		HALF_EDGE::HE_Face* tempF = new HALF_EDGE::HE_Face();
 		tempF->circumCenter = sf::Vector2f(triangles[i].circle.x, triangles[i].circle.y);
-		
+		tempF->radius = triangles[i].circle.radius;
 		for (size_t k = 0; k < 3; k++)
 		{
 			const int location = offset + k;
@@ -261,8 +278,8 @@ int main()
 
 	
 	vdg = new Voronoi();
-	double minY = 55;
-	double maxY = 390 + 55;
+	double minY = MINSIZE;
+	double maxY = MAXSIZE;
 	edges = vdg->ComputeVoronoiGraph(ver, minY, maxY);
 	delete vdg;
 	std::vector<sf::Vertex*> lines;
@@ -299,20 +316,22 @@ int main()
 	}
 	
 
-	//for (size_t i = 0; i < EdgeIndex.size(); i++)
-	//{
-	//	sf::Vector2f* start = BWpoints[EdgeIndex[i].first];
-	//	sf::Vector2f* end = BWpoints[EdgeIndex[i].second];
+	for (size_t i = 0; i < EdgeIndex.size(); i++)
+	{
+		sf::Vector2f* start = BWpoints[EdgeIndex[i].first];
+		sf::Vector2f* end = BWpoints[EdgeIndex[i].second];
 
-	//	sf::Vertex* test = new sf::Vertex[2];
-	//	test[0] = sf::Vector2f(start->x, start->y);
-	//	test[1] = sf::Vector2f(end->x, end->y);
-	//	lines.push_back(test);
-	//	lines.back()[0].color = sf::Color(0, 0, 255);
-	//	lines.back()[1].color = sf::Color(0, 0, 255);
-	//}
-	//
+		sf::Vertex* test = new sf::Vertex[2];
+		test[0] = sf::Vector2f(start->x, start->y);
+		test[1] = sf::Vector2f(end->x, end->y);
+		lines.push_back(test);
+		lines.back()[0].color = sf::Color(0, 0, 255);
+		lines.back()[1].color = sf::Color(0, 0, 255);
+	}
+	
+	vector<sf::CircleShape> circumPoints;
 	int stride = 3;
+	bool once = true;
 	for (size_t i = 0; i < triangles.size(); i++)
 	{
 		int offset = i * stride;
@@ -331,7 +350,70 @@ int main()
 			lines.back()[0].color = sf::Color(0, 255, 0);
 			lines.back()[1].color = sf::Color(0, 255, 0);
 		}
-		
+		if (once)
+		{
+			
+
+			//once = false;
+			sf::Vector2f* v1 = faceEdgePoints[offset]->point;
+			sf::Vector2f* v2 = faceEdgePoints[offset + 1]->point;
+			sf::Vector2f* v3 = faceEdgePoints[offset + 2]->point;
+			const float ax = v2->x - v1->x;
+			const float ay = v2->y - v1->y;
+			const float bx = v3->x - v1->x;
+			const float by = v3->y - v1->y;
+
+			const float m = v2->x * v2->x - v1->x * v1->x + v2->y * v2->y - v1->y * v1->y;
+			const float u = v3->x * v3->x - v1->x * v1->x + v3->y * v3->y - v1->y * v1->y;
+			const float s = 1. / (2. * (ax * by - ay * bx));
+
+
+			sf::Vector2f circle;
+			circle.x = ((v3->y - v1->y) * m + (v1->y - v2->y) * u) * s;
+			circle.y = ((v1->x - v3->x) * m + (v2->x - v1->x) * u) * s;
+
+			const float dx = v1->x - circle.x;
+			const float dy = v1->y - circle.y;
+			float radius = sqrt(dx * dx + dy * dy);
+
+			sf::CircleShape point;
+			point.setRadius(2);
+			point.setPosition(*v1 - sf::Vector2f(2, 2));
+			point.setFillColor({ 255,0,0 });
+			circumPoints.push_back(point);
+
+			point = sf::CircleShape();
+			point.setRadius(2);
+			point.setPosition(*v2 - sf::Vector2f(2, 2));
+			point.setFillColor({ 255,0,0 });
+			circumPoints.push_back(point);
+
+			point = sf::CircleShape();
+			point.setRadius(2);
+			point.setPosition(*v3 - sf::Vector2f(2, 2));
+			point.setFillColor({ 255,0,0 });
+			circumPoints.push_back(point);
+
+
+			
+			/*sf::Vector2f newPos;
+			newPos.x = std::max(float(MINSIZE), std::min(circle.x, float(MAXSIZE+MINSIZE)));
+			newPos.y = std::max(float(MINSIZE), std::min(circle.y, float(MAXSIZE+MINSIZE)));*/
+
+			point = sf::CircleShape();
+			point.setRadius(2);
+			point.setPosition(circle - sf::Vector2f(2, 2));
+			point.setFillColor({ 0,0,255 });
+			circumPoints.push_back(point);
+
+			point = sf::CircleShape();
+			point.setOutlineThickness(1.0f);
+			point.setOutlineColor({ 255,0,255 });
+			point.setRadius(radius);
+			point.setPosition(circle - sf::Vector2f(point.getRadius(), point.getRadius()));
+			point.setFillColor(sf::Color::Transparent);
+			circumPoints.push_back(point);
+		}
 	}
 	std::vector<VoronoiEdge> allVoronoiEdges;
 	for (size_t i = 0; i < faceList.size(); i++)
@@ -424,9 +506,44 @@ int main()
 	}
 #endif
 	//std::vector<int> polygonVertices;
+	int c = 0;
+	bool pST = false;
 	for (auto &cell : voronoiCells)
 	{
+		pST = false;
 		sf::Color color(rand() % 255, rand() % 255, rand() % 255);
+		
+		for (int i = 0; i < cell.edges.size(); i++)
+		{
+			if (!(cell.site.x < MAXSIZE+MINSIZE && cell.site.x > MINSIZE) &&
+				!(cell.site.y < MAXSIZE + MINSIZE && cell.site.y > MINSIZE))
+			{
+				pST = true;
+				break;
+			}
+			if (!(cell.edges[i].site.x < MAXSIZE + MINSIZE && cell.edges[i].site.x > MINSIZE) &&
+				!(cell.edges[i].site.y < MAXSIZE + MINSIZE && cell.edges[i].site.y > MINSIZE))
+			{
+				pST = true;
+				break;
+			}
+
+			if (!(cell.edges[i].v1.x < MAXSIZE + MINSIZE && cell.edges[i].v1.x > MINSIZE) &&
+				!(cell.edges[i].v1.y < MAXSIZE + MINSIZE && cell.edges[i].v1.y > MINSIZE))
+			{
+				pST = true;
+				break;
+			}
+
+			if (!(cell.edges[i].v2.x < MAXSIZE + MINSIZE && cell.edges[i].v2.x > MINSIZE) &&
+				!(cell.edges[i].v2.y < MAXSIZE + MINSIZE && cell.edges[i].v2.y > MINSIZE))
+			{
+				pST = true;
+				break;
+			}
+		}
+		if (pST)
+			continue;
 		for (int i = 0; i < cell.edges.size(); i++)
 		{
 			sf::Vector2f p3 = cell.edges[i].v1;
@@ -434,15 +551,58 @@ int main()
 			sf::Vertex* test = new sf::Vertex[3];
 			test[0] = cell.site;
 			test[0].color = color;
-			test[1] = p3;
+			test[1] = p2;
 			test[1].color = color;
 			test[2] = p3;
 			test[2].color = color;
 			polygons.push_back(test);
-		}
 
+			/*test = new sf::Vertex[2];
+			test[0] = cell.site;
+			test[0].color = color;
+			test[0] = p3;
+			test[0].color = { 255,0,0 };
+			test[1] = cell.site;  
+			test[1].color = { 255,0,0 };
+			polygons.push_back(test);*/
+		}
+		//if(c == 0)
+		//break;
+
+		c++;
 		//polygonVertices.push_back(cell.edges.size() * 2 + 1);
 	}
+	cout << polygons.size() << endl;
+	//for (auto &edge : allVoronoiEdges)
+	//{
+
+	//	sf::Color color(rand() % 255, rand() % 255, rand() % 255);
+	//	sf::Vector2f p3 = edge.v1;
+	//	sf::Vector2f p2 = edge.v2;
+	//	sf::Vertex* test = new sf::Vertex[2];
+	//	/*test[0] = cell.site;
+	//	test[0].color = color;*/
+	//	test[0] = p2;
+	//	test[0].color = { 0,0,255 };
+	//	test[1] = p3;
+	//	test[1].color = { 0,0,255 };
+	//	polygons.push_back(test);
+
+	//	//test = new sf::Vertex[2];
+	//	///*test[0] = cell.site;
+	//	//test[0].color = color;*/
+	//	//test[0] = p3;
+	//	//test[0].color = { 255,0,0 };
+	//	//test[1] = cell.site;
+	//	//test[1].color = { 255,0,0 };
+	//	//polygons.push_back(test);
+	//	/*if (c == 0)
+	//		break;*/
+
+	//	c++;
+	//	//polygonVertices.push_back(cell.edges.size() * 2 + 1);
+	//}
+
 	/*std::vector <sf::Vector2f> polygon;
 	HALF_EDGE::getPolygon(polygon, vertexList[0]);
 	sf::Vertex* poly = new sf::Vertex[polygon.size()];
@@ -451,7 +611,7 @@ int main()
 		sf::Vector2f point = polygon[i];
 
 		poly[i] = sf::Vector2f(point.x, point.y);
-		poly[i].color = sf::Color(255, 0, 0);
+		poly[i].color = sf::Color(2MINSIZE, 0, 0);
 	}*/
 	/*for (size_t i = 0; i < VorEdges.size(); i++)
 	{
@@ -459,8 +619,8 @@ int main()
 		test[0] = sf::Vector2f((VorEdges[i].first.x), (VorEdges[i].first.y));
 		test[1] = sf::Vector2f((VorEdges[i].second.x), (VorEdges[i].second.y));
 		lines.push_back(test);
-		lines.back()[0].color = sf::Color(255, 0, 0);
-		lines.back()[1].color = sf::Color(255, 0, 0);
+		lines.back()[0].color = sf::Color(2MINSIZE, 0, 0);
+		lines.back()[1].color = sf::Color(2MINSIZE, 0, 0);
 	}*/
 #else
 	for (auto const& e : triangulation.edges)
@@ -469,34 +629,22 @@ int main()
 		test[0] = sf::Vector2f((e.p0.x), (e.p0.y));
 		test[1] = sf::Vector2f((e.p1.x), (e.p1.y));
 		lines.push_back(test);
-		lines.back()[0].color = sf::Color(0, 0, 255);
-		lines.back()[1].color = sf::Color(0, 0, 255);
+		lines.back()[0].color = sf::Color(0, 0, 2MINSIZE);
+		lines.back()[1].color = sf::Color(0, 0, 2MINSIZE);
 	}
 
 #endif
 	
+	//for (int i = 0; i < edges.size(); i++)
+	//{
+	//	sf::Vertex* test = new sf::Vertex[2];
+	//	test[0] = sf::Vector2f(edges[i].VertexA.x, edges[i].VertexA.y);
+	//	test[1] = sf::Vector2f(edges[i].VertexB.x, edges[i].VertexB.y);
+	//	lines.push_back(test);
+	//}
 
-	/*sf::Vertex* test = new sf::Vertex[2];
-	test[0] = sf::Vector2f(55, 55);
-	test[1] = sf::Vector2f(55, 390 + 55);
-	lines.push_back(test);
 
-	test = new sf::Vertex[2];
-	test[0] = sf::Vector2f(55, 390 + 55);
-	test[1] = sf::Vector2f(390 + 55, 390 + 55);
-	lines.push_back(test);
-
-	test = new sf::Vertex[2];
-	test[0] = sf::Vector2f(390 + 55, 390 + 55);
-	test[1] = sf::Vector2f(390 + 55, 55);
-	lines.push_back(test);
-
-	test = new sf::Vertex[2];
-	test[0] = sf::Vector2f(390 + 55, 55);
-	test[1] = sf::Vector2f(55, 55);
-	lines.push_back(test);*/
-
-	sf::RenderWindow window(sf::VideoMode(500, 500), "SFML works!");
+	sf::RenderWindow window(sf::VideoMode(1000, 1000), "SFML works!");
 
 	//BinTree<int> bT;
 
@@ -518,8 +666,49 @@ int main()
 	//	std::cout << "Number " << serachNum << " was not found!" << std::endl; 
 	//}
 
+	
+	//for (size_t i = 0; i < faceList.size(); i++)
+	//{
+	//	//if (faceList[i]->radius < MAXSIZE)
+	//	{
+	//		/*sf::CircleShape point;
+	//		point.setRadius(faceList[i]->radius);
+	//		point.setPosition(faceList[i]->circumCenter - sf::Vector2f(faceList[i]->radius, faceList[i]->radius));
+	//		point.setOutlineThickness(1.0f);
+	//		point.setOutlineColor({ 255,0,255 });
+	//		point.setFillColor(sf::Color::Transparent);
+	//		circumPoints.push_back(point);*/
+
+	//		sf::CircleShape point;
+	//		point.setRadius(2);
+	//		point.setPosition(faceList[i]->circumCenter - sf::Vector2f(2, 2));
+	//		point.setFillColor({ 0,0,255 });
+	//		circumPoints.push_back(point);
+	//	}
+	//}
+
+	vector<DVertex*> sTri = triangulation.getSuperTriangle();
+	for (int i = 0; i < 3; i++)
+	{
+		sf::Vector2f* start = sTri[i];
+		sf::Vector2f* end = sTri[(i+1)%3];
+
+		sf::Vertex* test = new sf::Vertex[2];
+		test[0] = sf::Vector2f(start->x, start->y);
+		test[1] = sf::Vector2f(end->x, end->y);
+		lines.push_back(test);
+		lines.back()[0].color = sf::Color(255, 0, 0);
+		lines.back()[1].color = sf::Color(255, 0, 0);
+	}
+	sf::RectangleShape rect;
+	rect.setFillColor(sf::Color::Transparent);
+	rect.setOutlineThickness(2);
+	rect.setOutlineColor({ 255,255,255 });
+	rect.setSize({ float(MAXSIZE),float(MAXSIZE) });
+	rect.setPosition({ float(MINSIZE), float(MINSIZE)  });
 	sf::CircleShape point;
 	int position = 3;//8 1
+
 	point.setPosition(sf::Vector2f(BWpoints[position]->x , BWpoints[position]->y));
 	point.setRadius(5);
 
@@ -538,21 +727,25 @@ int main()
 						window.close();
 					break;
 			}
-
 		}
 
 		window.clear();
 		
 		//window.draw(poly, polygon.size(), sf::LineStrip);
 		//window.draw(point);
-		/*for (int i = 0; i < polygons.size(); i++)
-		{
-			window.draw(polygons[i], 2, sf::Lines);
-		}*/
 
 		for(auto line : lines)
 			window.draw(line, 2, sf::Lines);
 		
+		for (int i = 0; i < polygons.size(); i++)
+		{
+			window.draw(polygons[i], 3, sf::Triangles);
+		}
+		/*for (auto point : circumPoints)
+		{
+			window.draw(point);
+		}*/
+		window.draw(rect);
 		window.display();
 	}
 

@@ -123,8 +123,10 @@ std::vector<Triangle>& Delunay::Triangulate(std::vector<DVertex*>& points)
 			tri.edgeContainsVertex(p2) ||
 			tri.edgeContainsVertex(p3)); };
 */
-	erase_where(_triangles, is_part_STriangle_Old);
+	//erase_where(_triangles, is_part_STriangle_Old);
 	int i = 0;
+
+
 	for (auto & t : _triangles)
 	{
 		if (t.orientation() == 2)

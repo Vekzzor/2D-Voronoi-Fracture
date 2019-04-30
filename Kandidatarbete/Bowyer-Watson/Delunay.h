@@ -101,7 +101,7 @@ public:
 
 		this->circle.x = ((v3->y - v1->y) * m + (v1->y - v2->y) * u) * s;
 		this->circle.y = ((v1->x - v3->x) * m + (v2->x - v1->x) * u) * s;
-
+		//sf::Vector2f test = CalculateCircleCenter();
 		const float dx = v1->x - this->circle.x;
 		const float dy = v1->y - this->circle.y;
 		this->circle.radius = dx * dx + dy * dy;
@@ -129,7 +129,19 @@ public:
 	{
 		return (this->e[0] == t.e[0] && this->e[1] == t.e[1] && this->e[2] == t.e[2]);
 	}
+	sf::Vector2f CalculateCircleCenter()
+	{
+		sf::Vector2f center;
 
+		float ma = (v2->y - v1->y) / (v2->x - v1->x);
+		float mb = (v3->y - v2->y) / (v3->x - v2->x);
+
+		center.x = (ma * mb * (v1->y - v3->y) + mb * (v1->x + v2->x) - ma * (v2->x + v3->x)) / (2 * (mb - ma));
+
+		center.y = (-1 / ma) * (center.x - (v1->x + v2->x) / 2) + (v1->y + v2->y) / 2;
+
+		return center;
+	}
 	int orientation()
 	{
 		int val = (v2->y - v1->y) * (v3->x - v2->x) -
@@ -239,3 +251,52 @@ public:
 	const std::vector<DVertex*>& getSuperTriangle() const { return superTriangle; };
 };
 
+
+#if 0
+bool findCircleCenter(const Point2D &p1, const Point2D &p2, const Point2D &p3, Point2D &center) 
+{
+
+	// get normalized vectors
+	Point2D u1 = (p1 - p2).normalized(), u2 = (p3 - p2).normalized();
+
+	double cross = crossProduct(u1, u2);
+
+	// check if vectors are collinear
+	if (fabs(cross) < CIRCLE_CENTER_EPSILON) {
+		return false;
+	}
+
+	// get cental points
+	Point2D pc1 = 0.5 * (p1 + p2), pc2 = 0.5 * (p2 + p3);
+
+	// get free components
+	double b1 = dotProduct(u1, pc1), b2 = dotProduct(u2, pc2);
+
+	// calculate the center of a circle
+	center.x = (b1 * u2.y - b2 * u1.y) / cross;
+	center.y = (u1.x * b2 - u2.x * b1) / cross;
+
+	return true;
+}
+
+inline sf::Vector3f* cross(float * arrA, float * arrB, float* crossArr)
+{
+	crossArr[0] = arrA[1] * arrB[2] - arrA[2] * arrB[1];
+	crossArr[1] = arrA[0] * arrB[2] - arrA[2] * arrB[0];
+	crossArr[2] = arrA[0] * arrB[1] - arrA[1] * arrB[0];
+
+	sf::Vector3f* crossDone = new sf::Vector3f{ crossArr[0], crossArr[1], crossArr[2] };
+	return crossDone;
+}
+
+inline int dotProduct(std::vector<double> vecA, std::vector<double> vecB, int nrOfElements)
+{
+	double product = 0.0;
+
+	for (int i = 0; i < nrOfElements; i++)
+	{
+		product = product + vecA[i] * vecB[i];
+	}
+	return product;
+}
+#endif

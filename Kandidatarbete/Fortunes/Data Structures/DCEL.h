@@ -90,6 +90,7 @@ namespace DCEL
 	}
 }
 #endif
+
 namespace HALF_EDGE
 {
 	struct HE_Edge;
@@ -105,6 +106,7 @@ namespace HALF_EDGE
 	{
 		HE_Edge *edge = nullptr;  /* rep->left == this */
 		sf::Vector2f circumCenter;
+		float radius;
 	};
 
 	struct HE_Edge
@@ -154,28 +156,6 @@ namespace HALF_EDGE
 			half_edge = half_edge->next;
 		} while (half_edge != start_Edge);
 	}
-
-	//void getPolygon(HE_Vertex* vertex)
-	//{
-	//	HE_Edge* start_Edge = vertex->edge;
-	//	HE_Edge* half_edge = start_Edge;
-	//	bool finished = false;
-	//	while (finished)
-	//	{
-	//		HE_Edge* face_Start_Edge = start_Edge;
-	//		HE_Edge* face_Half_edge = face_Start_Edge;
-	//		do
-	//		{
-	//			//Collect edge;
-	//			face_Half_edge = face_Half_edge->next;
-	//		} while (face_Half_edge != face_Start_Edge);
-
-	//		start_Edge = start_Edge->twin->next;
-	//		half_edge = start_Edge;
-	//	}
-	//	
-
-	//}
 
 	bool getPolygon(std::vector<sf::Vector2f>& siteList, HE_Vertex* vertex)
 	{
