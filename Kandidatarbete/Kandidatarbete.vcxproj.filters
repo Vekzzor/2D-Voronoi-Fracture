@@ -21,9 +21,6 @@
     <ClCompile Include="voronoi.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Fortunes\Fortunes.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Fortunes\Event\CircleEvent.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -33,12 +30,21 @@
     <ClCompile Include="Fortunes\Event\SIteEvent.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="FortunesVer2.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Fortunes\Types\Point2D.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Fortunes\Math\Circle.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Fortunes\Math\Parabola.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="voronoi.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Fortunes\Fortunes.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Fortunes\Data Structures\LinkedList.h">
@@ -59,7 +65,16 @@
     <ClInclude Include="Fortunes\Data Structures\DCEL.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Fortunes\Math\vmath.h">
+    <ClInclude Include="FortunesVer2.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Fortunes\Types\Point2D.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Fortunes\Math\Circle.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Fortunes\Math\Parabola.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

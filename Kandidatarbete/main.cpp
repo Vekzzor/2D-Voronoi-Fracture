@@ -39,12 +39,16 @@ int main()
 
 	sf::RenderWindow window(sf::VideoMode(500, 500), "SFML works!");
 
-	sf::ConvexShape shape; 
-	shape.setPointCount(20); 
-	shape.setTextureRect(sf::IntRect(0, 0, 10, 10)); 
-	Fortunes testFortune(shape,10); 
-	testFortune.findCircleCenter(sf::Vector2f(34, 33), sf::Vector2f(3, 5), sf::Vector2f(35,12)); 
+	//sf::ConvexShape shape; 
+	//shape.setPointCount(20); 
+	//shape.setTextureRect(sf::IntRect(0, 0, 10, 10)); 
+	//Fortunes testFortune(shape,10); 
 
+	//sf::Vector2f center = sf::Vector2f(0, 0);
+	//testFortune.findCircleCenter(sf::Vector2f(34, 33), sf::Vector2f(3, 5), sf::Vector2f(35,12), center); 
+
+	//std::cout << center.x << std::endl; 
+	//std::cout << center.y << std::endl; 
 
 	while (window.isOpen())
 	{

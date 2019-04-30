@@ -128,8 +128,6 @@ private:
 	Site *  nextone();
 	void clean();
 
-
-
 	Freelist	hfl;
 	Halfedge *ELleftend, *ELrightend;
 	double	xmin, xmax, ymin, ymax, deltax, deltay;

@@ -1,6 +1,7 @@
 // voronoi.cpp
 
 #include "voronoi.h"
+//#include "Fortunes\Fortunes.h"
 
 int VoronoiPointCompare(const void *p1, const void *p2)
 {
@@ -23,6 +24,7 @@ VoronoiPoint::VoronoiPoint()
 	x = 0.0;
 	y = 0.0;
 }
+
 
 Voronoi::Voronoi()
 {
@@ -497,13 +499,10 @@ int  Voronoi::PQbucket(Halfedge *he)
 	return(bucket);
 }
 
-
-
 int Voronoi::PQempty()
 {
 	return(PQcount == 0);
 }
-
 
 VoronoiPoint Voronoi::PQ_min()
 {
@@ -574,8 +573,6 @@ char *  Voronoi::getfree(Freelist *fl)
 	fl->head = (fl->head)->nextfree;
 	return((char *)t);
 }
-
-
 
 void Voronoi::makefree(Freenode *curr, Freelist *fl)
 {

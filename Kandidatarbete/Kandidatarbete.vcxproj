@@ -131,22 +131,27 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Fortunes\Math\Circle.cpp" />
+    <ClCompile Include="FortunesVer2.cpp" />
     <ClCompile Include="Fortunes\Event\CircleEvent.cpp" />
     <ClCompile Include="Fortunes\Event\Event.cpp" />
     <ClCompile Include="Fortunes\Event\SIteEvent.cpp" />
-    <ClCompile Include="Fortunes\Fortunes.cpp" />
+    <ClCompile Include="Fortunes\Math\Parabola.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="Fortunes\Types\Point2D.cpp" />
     <ClCompile Include="voronoi.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Fortunes\Math\Circle.h" />
+    <ClInclude Include="FortunesVer2.h" />
     <ClInclude Include="Fortunes\Data Structures\BinTree.h" />
     <ClInclude Include="Fortunes\Data Structures\DCEL.h" />
     <ClInclude Include="Fortunes\Data Structures\LinkedList.h" />
     <ClInclude Include="Fortunes\Event\CircleEvent.h" />
     <ClInclude Include="Fortunes\Event\Event.h" />
     <ClInclude Include="Fortunes\Event\SiteEvent.h" />
-    <ClInclude Include="Fortunes\Fortunes.h" />
-    <ClInclude Include="Fortunes\Math\vmath.h" />
+    <ClInclude Include="Fortunes\Math\Parabola.h" />
+    <ClInclude Include="Fortunes\Types\Point2D.h" />
     <ClInclude Include="voronoi.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
