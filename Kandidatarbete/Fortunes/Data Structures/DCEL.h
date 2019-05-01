@@ -164,10 +164,6 @@ namespace HALF_EDGE
 		HE_Edge* half_edge = start_Edge;
 		do
 		{
-			//sf::Vector2f* start = half_edge->vert->point;
-			//sf::Vector2f* end = half_edge->next->vert->point;
-
-			//sf::Vector2f midPoint((start->x + end->x) / 2, (start->y + end->y) / 2);
 			if (half_edge->twin == nullptr)
 			{
 				hasNeighbor = false;

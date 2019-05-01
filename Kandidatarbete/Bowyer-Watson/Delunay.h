@@ -84,12 +84,6 @@ public:
 		e{ {_v2, _v1}, { _v3, _v2 }, { _v1, _v3 } },
 		circle{}
 	{
-
-		//if (this->edgeOrientation() == 2)
-		//{
-		//	//if(this->re_OrderEdges())
-		//		int k = 0;
-		//}
 		const float ax = v2->x - v1->x;
 		const float ay = v2->y - v1->y;
 		const float bx = v3->x - v1->x;
@@ -123,7 +117,6 @@ public:
 		this->v3 = t.v3;
 
 		this->circle = t.circle;
-
 	}
 	bool operator==(const Triangle &t)
 	{
@@ -244,7 +237,6 @@ public:
 	~Delunay();
 
 	std::vector<Triangle>& Triangulate(std::vector<DVertex*>& points);
-
 	const std::vector<Triangle>& getTriangles() const { return _triangles; };
 	const std::vector<DEdge>& getEdges() const { return _edges; };
 	const std::vector<DVertex*>& getVertices() const { return _vertices; };

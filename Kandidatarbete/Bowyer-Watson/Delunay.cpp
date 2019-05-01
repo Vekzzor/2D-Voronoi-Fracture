@@ -40,27 +40,26 @@ std::vector<Triangle>& Delunay::Triangulate(std::vector<DVertex*>& points)
 	DVertex* p1 = new DVertex(midx - 20 * deltaMax, midy - deltaMax);
 	DVertex* p2 = new DVertex(midx, midy + 20 * deltaMax);
 	DVertex* p3 = new DVertex(midx + 20 * deltaMax, midy - deltaMax);
+	
 	superTriangle.push_back(p1);
 	superTriangle.push_back(p2);
 	superTriangle.push_back(p3);
+
 	// Create a list of triangles, and add the supertriangle in it
 	_triangles.push_back({ p1, p2, p3 });
 	
 	int pointIndex = 0;
 	for (DVertex* const pt : points)
 	{
-		
-		//std::cout << "_triangles contains " << _triangles.size() << " elements" << std::endl;
 		std::vector<DEdge> edges;
 		std::vector<Triangle> tmps;
 		for (const Triangle& t : _triangles)
 		{
-			//std::cout << "Processing " << std::endl << *t << std::endl;
 			const auto dist = (t.circle.x - pt->x) * (t.circle.x - pt->x) +
 							  (t.circle.y - pt->y) * (t.circle.y - pt->y);
 			if ((dist - t.circle.radius) <= eps)
 			{
-				//std::cout << "Pushing bad triangle " << *t << std::endl;
+				//Pushing bad triangle
 				//t.isBad = true;
 				for(int i = 0; i < 3; i++)
 					edges.push_back(t.e[i]);
@@ -68,7 +67,7 @@ std::vector<Triangle>& Delunay::Triangulate(std::vector<DVertex*>& points)
 			else
 			{
 				tmps.push_back(t);
-				//std::cout << " does not contains " << *p << " in his circum center" << std::endl;
+				//does not contain in his circum center
 			}
 		}
 
@@ -106,25 +105,19 @@ std::vector<Triangle>& Delunay::Triangulate(std::vector<DVertex*>& points)
 		/* Update triangulation. */
 		for (const DEdge &e : edges)
 		{
-
 			tmps.push_back(Triangle( e.v1, e.v2, pt));
 		}
 
 		_triangles = tmps;
 	}
 
-	auto is_part_STriangle_Old = [&](Triangle const& tri) {
+	auto is_part_STriangle = [&](Triangle const& tri) {
 		return ((tri.v1 == p1 || tri.v2 == p1 || tri.v3 == p1) ||
 			(tri.v1 == p2 || tri.v2 == p2 || tri.v3 == p2) ||
 			(tri.v1 == p3 || tri.v2 == p3 || tri.v3 == p3)); };
-/*
-	auto is_part_STriangle = [&](Triangle const& tri) {
-		return (tri.edgeContainsVertex(p1) ||
-			tri.edgeContainsVertex(p2) ||
-			tri.edgeContainsVertex(p3)); };
-*/
-	//erase_where(_triangles, is_part_STriangle_Old);
-	int i = 0;
+
+	erase_where(_triangles, is_part_STriangle);
+	//int i = 0;
 
 
 	for (auto & t : _triangles)
@@ -132,10 +125,10 @@ std::vector<Triangle>& Delunay::Triangulate(std::vector<DVertex*>& points)
 		if (t.orientation() == 2)
 			if (t.re_OrderEdges())
 				int k = 0;
-		i++;
+		//i++;
 
-		for (int k = 0; k < 3; k++)
-			_edges.push_back(t.e[i]);
+		/*for (int k = 0; k < 3; k++)
+			_edges.push_back(t.e[i]);*/
 	}
 
 	
