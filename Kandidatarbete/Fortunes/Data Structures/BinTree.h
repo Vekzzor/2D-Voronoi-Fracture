@@ -23,8 +23,6 @@ public:
 		int height;
 		//Pointer to the position of the sweepline 
 		double* sweepline; 
-		//Pointer to a vector of input points.
-		std::vector<Point2D>* points; 
 
 		//Indices of the points
 		std::pair<int, int> indices; 
@@ -39,14 +37,13 @@ public:
 		std::shared_ptr<Event> circleEvent; 
 		std::shared_ptr<HALF_EDGE::HE_Edge*> edge; 
 
-		//Pointer to next and previous arc node:
+		//Pointer to vector of input points
+		std::vector<Point2D>* points; 
+
+		//Pointer to next and previous arc node (left, middle or right arc)
 		Node* next, prev; 
 
-		Node(const std::pair<int,int>& _indices, 
-			double* sweepline = nullptr, 
-			const std::vector<Point2D>* _points,
-			Node* _left, Node* right, Node* parent,
-			int height = 1)
+		Node()
 		{
 		}
 		~Node()
@@ -60,11 +57,19 @@ public:
 			return indices.first == indices.second; 
 		}
 
+		//This is only for leafs, this functions returns its index. 
+		inline bool get_id()
+		{
+			return indices.first;
+		}
+
+		//Check if the indexes contained in a node is equal.
 		inline bool hasIndices(int a, int b)
 		{
 			return indices.first == a && indices.second == b; 
 		}
 
+		//Check if the indexes contained in a node is equal.
 		inline hasIndices(const std::pair<int, int> &p)
 		{
 			return indices.first == p.first &&
@@ -89,7 +94,6 @@ public:
 				Point2D p1 = (*points)[indices.first], p2 = (*points)[indices.second]; 
 				std::vector<Point2D> ips = findIntersectionPoints(p1, p2, *sweepline); 
 
-				//This means its a breakpoint
 				if (ips.size() == 2)
 				{
 					if (p1.y < p2.y)
@@ -101,7 +105,6 @@ public:
 						return ips[1].x;
 					}
 				}
-				//This means its a leaf node
 				else
 				{
 					return ips[0].x;
@@ -110,7 +113,7 @@ public:
 		}
 	};
 
-	//Connect as a list
+	//Connect as a list (For arc/leaf nodes)
 	void connect(Node* prev, Node* next)
 	{
 		prev->next = next; 
@@ -140,10 +143,10 @@ public:
 	}
 
 	//Get balance of the node (difference between the heights of left and right subtrees. 
-	int GetBalance()
-	{
-		return GetHeight(node->left) - getHeight(node->right); 
-	}
+	//int GetBalance()
+	//{
+	//	return GetHeight(node->left) - getHeight(node->right); 
+	//}
 
 	/*Think these are fixed already*/
 
@@ -162,22 +165,39 @@ public:
 
 
 	/*Find a leaf in a tree such that x is under the parabolic 
-	arc, which corresponds to this leaf*/
-	Node* find(Node*& root, double x)
+	arc, which corresponds to this leaf*/ //Make this recursive?
+	Node* ReplaceNode(Node*& root,Node*& newNode)
 	{
-		if (root == nullptr) {
-			return nullptr;
+		//If root is nullptr, just insert the new node.
+		if (root == nullptr)
+		{
+			root = newNode; 
 		}
-		Node* node = root;
-		while (!node->is_leaf()) {
-			if (node->value() < x) {
-				node = node->right;
+
+		//Get parent node
+		Node* parent = root->parent; 
+
+		//Find the x-coord 
+		double x = newNode->value(); 
+
+		//Remove leaf, replace it with a new subtree
+		newNode->parent = root->parent; 
+
+		//Delete old root
+		Delete(root, root->value());
+
+		if (parent != nullptr)
+		{
+			if (parent->value() < x)
+			{
+				AddNode(newNode->right, x); 
 			}
-			else {
-				node = node->left;
+			else
+			{
+				AddNode(newNode->left, x); 
 			}
 		}
-		return node;
+		//Rebalance?
 	}
 
 	///*Replace a leaf "node" with a new subtree, which has a root,
@@ -193,7 +213,7 @@ public:
 	/*Returns breakpoints for a given arc*/
 	std::pair<Node*, Node*> breakpoints(Node* leaf)
 	{
-
+	
 	}
 
 	Node* makeSimpleSubTree(int index, int index_behind, double *sweepline,
