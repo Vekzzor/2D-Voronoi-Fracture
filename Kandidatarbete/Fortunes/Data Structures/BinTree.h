@@ -70,7 +70,7 @@ public:
 		}
 
 		//Check if the indexes contained in a node is equal.
-		inline hasIndices(const std::pair<int, int> &p)
+		inline bool hasIndices(const std::pair<int, int> &p)
 		{
 			return indices.first == p.first &&
 				indices.second == p.second; 
