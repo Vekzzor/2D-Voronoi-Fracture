@@ -2,14 +2,13 @@
 #include <SFML/Graphics.hpp>
 #include <cmath>
 #include <limits>
-
+#include "../Fortunes/Data Structures/DCEL.h"
 
 constexpr double eps = 1e-4;
-struct DVertex;
 class DEdge
 {
 public:
-	DEdge(DVertex* const& _v1, DVertex* const& _v2) : v1{ _v1 }, v2{ _v2 } {}
+	DEdge(HALF_EDGE::HE_Vertex* const& _v1, HALF_EDGE::HE_Vertex* const& _v2) : v1{ _v1 }, v2{ _v2 } {}
 	DEdge(const DEdge &e)
 	{
 		this->v1 = e.v1;
@@ -34,8 +33,8 @@ public:
 	{
 		std::swap(v1, v2);
 	}
-	DVertex* v1;
-	DVertex* v2;
+	HALF_EDGE::HE_Vertex* v1;
+	HALF_EDGE::HE_Vertex* v2;
 private:
 	//int refCount = 0;
 };
@@ -45,21 +44,6 @@ struct DCircle {
 	DCircle() = default;
 };
 
-struct DVertex : public sf::Vector2f {
-	DVertex(int x, int y, int index = -1) : sf::Vector2f(x,y)
-	{
-		arrayIndex = index;
-	}
-	DVertex(sf::Vector2f vector, int index = -1) : sf::Vector2f(vector)
-	{
-		arrayIndex = index;
-	}
-	sf::Vector2f getCoordinates()
-	{
-		return sf::Vector2f(x, y);
-	}
-	int arrayIndex = -1;
-};
 class Triangle
 {
 private:
@@ -73,32 +57,61 @@ private:
 	}
 public:
 	DEdge e[3];
-	DVertex* v1;
-	DVertex* v2;
-	DVertex* v3;
+	HALF_EDGE::HE_Edge* he[3];
+	HALF_EDGE::HE_Vertex* v1;
+	HALF_EDGE::HE_Vertex* v2;
+	HALF_EDGE::HE_Vertex* v3;
 	DCircle circle;
-	Triangle(DVertex* _v1, DVertex* _v2, DVertex* _v3)
+	HALF_EDGE::HE_Face* face;
+	Triangle(HALF_EDGE::HE_Vertex* _v1, HALF_EDGE::HE_Vertex* _v2, HALF_EDGE::HE_Vertex* _v3)
 	  : v1{ _v1 },
 		v2{ _v2 },
 		v3{ _v3 },
 		e{ {_v2, _v1}, { _v3, _v2 }, { _v1, _v3 } },
 		circle{}
 	{
-		const float ax = v2->x - v1->x;
-		const float ay = v2->y - v1->y;
-		const float bx = v3->x - v1->x;
-		const float by = v3->y - v1->y;
+		/*if (this->orientation() == 2)
+			this->flipOrientation();*/
 
-		const float m = v2->x * v2->x - v1->x * v1->x + v2->y * v2->y - v1->y * v1->y;
-		const float u = v3->x * v3->x - v1->x * v1->x + v3->y * v3->y - v1->y * v1->y;
+		sf::Vector2f* p1 = v1->point;
+		sf::Vector2f* p2 = v2->point;
+		sf::Vector2f* p3 = v3->point;
+
+		const float ax = p2->x - p1->x;
+		const float ay = p2->y - p1->y;
+		const float bx = p3->x - p1->x;
+		const float by = p3->y - p1->y;
+
+		const float m = p2->x * p2->x - p1->x * p1->x + p2->y * p2->y - p1->y * p1->y;
+		const float u = p3->x * p3->x - p1->x * p1->x + p3->y * p3->y - p1->y * p1->y;
 		const float s = 1. / (2. * (ax * by - ay * bx));
 
-		this->circle.x = ((v3->y - v1->y) * m + (v1->y - v2->y) * u) * s;
-		this->circle.y = ((v1->x - v3->x) * m + (v2->x - v1->x) * u) * s;
-		//sf::Vector2f test = CalculateCircleCenter();
-		const float dx = v1->x - this->circle.x;
-		const float dy = v1->y - this->circle.y;
+		this->circle.x = ((p3->y - p1->y) * m + (p1->y - p2->y) * u) * s;
+		this->circle.y = ((p1->x - p3->x) * m + (p2->x - p1->x) * u) * s;
+
+		const float dx = p1->x - this->circle.x;
+		const float dy = p1->y - this->circle.y;
 		this->circle.radius = dx * dx + dy * dy;
+
+
+		/*this->face = new HALF_EDGE::HE_Face();
+		this->face->circumCenter = sf::Vector2f(circle.x, circle.y);
+		this->face->radius = circle.radius;
+
+		for (int i = 0; i < 3; i++)
+		{
+			this->he[i] = new HALF_EDGE::HE_Edge();
+			this->he[i]->face = this->face;
+		}
+		this->face->edge = this->he[0];
+		this->he[0]->vert = v1;
+		this->he[1]->vert = v2;
+		this->he[2]->vert = v3;
+
+		this->he[0]->setNext(this->he[1]);
+		this->he[1]->setNext(this->he[2]);
+		this->he[2]->setNext(this->he[0]);*/
+
 	}
 	~Triangle()
 	{
@@ -125,20 +138,23 @@ public:
 	sf::Vector2f CalculateCircleCenter()
 	{
 		sf::Vector2f center;
+		sf::Vector2f* p1 = v1->point;
+		sf::Vector2f* p2 = v2->point;
+		sf::Vector2f* p3 = v3->point;
 
-		float ma = (v2->y - v1->y) / (v2->x - v1->x);
-		float mb = (v3->y - v2->y) / (v3->x - v2->x);
+		float ma = (p2->y - p1->y) / (p2->x - p1->x);
+		float mb = (p3->y - p2->y) / (p3->x - p2->x);
 
-		center.x = (ma * mb * (v1->y - v3->y) + mb * (v1->x + v2->x) - ma * (v2->x + v3->x)) / (2 * (mb - ma));
+		center.x = (ma * mb * (p1->y - p3->y) + mb * (p1->x + p2->x) - ma * (p2->x + p3->x)) / (2 * (mb - ma));
 
-		center.y = (-1 / ma) * (center.x - (v1->x + v2->x) / 2) + (v1->y + v2->y) / 2;
+		center.y = (-1 / ma) * (center.x - (p1->x + p2->x) / 2) + (p1->y + p2->y) / 2;
 
 		return center;
 	}
 	int orientation()
 	{
-		int val = (v2->y - v1->y) * (v3->x - v2->x) -
-			(v2->x - v1->x) * (v3->y - v2->y);
+		int val = (v2->point->y - v1->point->y) * (v3->point->x - v2->point->x) -
+			(v2->point->x - v1->point->x) * (v3->point->y - v2->point->y);
 
 		if (val == 0) return 0;  // colinear 
 
@@ -162,8 +178,8 @@ public:
 
 	float counterClockwiseResult()
 	{
-		float result = (v2->x - v1->x) * (v3->y - v1->y) -
-			(v3->x - v1->x) * (v2->y - v1->y);
+		float result = (v2->point->x - v1->point->x) * (v3->point->y - v1->point->y) -
+			(v3->point->x - v1->point->x) * (v2->point->y - v1->point->y);
 		return result;
 	}
 	void flipOrientation()
@@ -182,28 +198,6 @@ public:
 
 		e[2].v1 = v1;
 		e[2].v2 = v3;
-
-	
-
-		//sf::Vector2f* tempV;
-		////swap Dir
-		//tempV = e1.v1;
-		//e1.v1 = e1.v2;
-		//e1.v2 = tempV;
-
-		//tempV = e2.v1;
-		//e2.v1 = e2.v2;
-		//e2.v2 = tempV;
-
-		//tempV = e3.v1;
-		//e3.v1 = e3.v2;
-		//e3.v2 = tempV;
-
-		//////swap Edges
-		////DEdge tempE(e1);
-		////e1 = e3;
-		////e3 = e2;
-		////e2 = tempE;
 
 		return this->orientation() == 1;
 	}
@@ -230,17 +224,15 @@ class Delunay
 private:
 	std::vector<Triangle> _triangles;
 	std::vector<DEdge> _edges;
-	std::vector<DVertex*> _vertices;
-	std::vector<DVertex*> superTriangle;
+	std::vector<HALF_EDGE::HE_Vertex*> _vertices;
 public:
 	Delunay();
 	~Delunay();
 
-	std::vector<Triangle>& Triangulate(std::vector<DVertex*>& points);
+	std::vector<Triangle>& Triangulate(std::vector<HALF_EDGE::HE_Vertex*>& points);
 	const std::vector<Triangle>& getTriangles() const { return _triangles; };
 	const std::vector<DEdge>& getEdges() const { return _edges; };
-	const std::vector<DVertex*>& getVertices() const { return _vertices; };
-	const std::vector<DVertex*>& getSuperTriangle() const { return superTriangle; };
+	const std::vector<HALF_EDGE::HE_Vertex*>& getVertices() const { return _vertices; };
 };
 
 

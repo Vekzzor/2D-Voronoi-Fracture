@@ -2,17 +2,41 @@
 #include <SFML/Graphics.hpp>
 #include "voronoi.h"
 #include <iostream>
+#include <fstream>
 #include "Fortunes/Data Structures/BinTree.h"
 #include "Bowyer-Watson/Delunay.h"
-#include "Bowyer-Watson/delaunay.hpp"
-#include "Fortunes/Data Structures/DCEL.h"
+//#include "Fortunes/Data Structures/DCEL.h"
 #include <math.h> 
 #include <chrono>
+#include <crtdbg.h>
+
+#define _CRTDBG_MAP_ALLOC
+#ifdef _DEBUG
+#define DBG_NEW new ( _NORMAL_BLOCK , __FILE__ , __LINE__ )
+// Replace _NORMAL_BLOCK with _CLIENT_BLOCK if you want the
+// allocations to be of _CLIENT_BLOCK type
+#else
+#define DBG_NEW new
+#endif
+
+#define RENDERING 0
+static const int NR_OF_TESTS = 10;
+static const int NR_OF_REPEATS = 10;
+struct PerformanceData
+{
+	unsigned int Seeds = 0;
+	double FortunesTime = 0;
+	double BowyerTriangulation = 0;
+	double TriToVoronoi = 0;
+} perfData[NR_OF_TESTS]{};
+
+static unsigned int perfDataIndex = 0;
 
 vector<sf::CircleShape> circumPoints;
 static const int MINSIZE = 300; //55
 static const int MAXSIZE = 400; //390
-static const int SEEDS = 100;
+static const float CENTER = float(MINSIZE + (MAXSIZE / 2));
+static int SEEDS = 100;
 
 
 class Polygon : public sf::Drawable, public sf::Transformable
@@ -62,7 +86,7 @@ bool LiangBarsky(double edgeLeft, double edgeRight, double edgeBottom, double ed
 	double x0src, double y0src, double x1src, double y1src,                 // Define the start and end points of the line.
 	double &x0clip, double &y0clip, double &x1clip, double &y1clip);         // The output values, so declare these outside.
 
-
+void WriteToFile();
 
 struct VoronoiEdge
 {
@@ -122,621 +146,547 @@ void addVoronoiEdge(HALF_EDGE::HE_Edge* e, sf::Vector2f center, std::vector<Voro
 	{
 		return;
 	}
-
-	//Calculate the circumcenter of the neighbor
+	//Get the circumcenter of the neighbor
 	HALF_EDGE::HE_Edge* eNeighbor = e->twin;
-
-	sf::Vector2f* v1 = eNeighbor->vert->point;
-	sf::Vector2f* v2 = eNeighbor->next->vert->point;
-	sf::Vector2f* v3 = eNeighbor->next->next->vert->point;
-
 	sf::Vector2f voronoiVertexNeighbor = eNeighbor->face->circumCenter;
-	//if (outsideSquare(voronoiVertexNeighbor) != 0 && outsideSquare(center) != 0)
-	//{
-	//	return;
-	//}
 
-	//if (outsideSquare(center) != 0)
-	//{
-	//	return;
-	//	sf::Vector2f result = lineRect(center, voronoiVertexNeighbor, float(MINSIZE), float(MINSIZE),
-	//		float(MAXSIZE + MINSIZE), float(MAXSIZE + MINSIZE));
-	//	if (result.x != 0 || result.y != 0)
-	//	{
-	//		center = result;
-	//		sf::CircleShape point;
-	//		point.setRadius(4);
-	//		point.setPosition(result - sf::Vector2f(4,4));
-	//		point.setFillColor({ 0,0,255 });
-	//		circumPoints.push_back(point);
-	//	}
-	//}
-	//
-	//if (outsideSquare(voronoiVertexNeighbor))
-	//{
-	//	return;
-	//	sf::Vector2f result = lineRect(center, voronoiVertexNeighbor, float(MINSIZE), float(MINSIZE),
-	//		float(MAXSIZE + MINSIZE), float(MAXSIZE + MINSIZE));
-	//	if (result.x != 0 || result.y != 0)
-	//	{
-	//		voronoiVertexNeighbor = result;
-	//		sf::CircleShape point;
-	//		point.setRadius(4);
-	//		point.setPosition(result - sf::Vector2f(4, 4));
-	//		point.setFillColor({ 0,0,255 });
-	//		circumPoints.push_back(point);
-	//	}
-	//}
+
 	//Create a new voronoi edge between the voronoi vertices
-	voronoiEdges.push_back(new 
-		VoronoiEdge(center, voronoiVertexNeighbor, e->vert->point));
+	voronoiEdges.push_back(DBG_NEW 
+		VoronoiEdge(center, voronoiVertexNeighbor, e->prev->vert->point));
 }
 
 int main()
 {
-	Voronoi* vdg;
-	vector<VoronoiPoint*> ver;
-	vector<VEdge> edges;
-
-	//INITIALIZATION
-	for (vector<VoronoiPoint*>::iterator i = ver.begin(); i != ver.end(); i++)
-		delete((*i));
-	ver.clear();
-	edges.clear();
-
-	float center = float(MINSIZE + (MAXSIZE / 2));
-	//Create Seed Points
-	vector<DVertex*> BWpoints;
+	//_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+	for (int k = 0; k < NR_OF_TESTS; k++)
 	{
-		for (size_t i = 0; i < SEEDS; i++)
+		for (int i = 0; i < NR_OF_REPEATS; i++)
 		{
-			float x = float(rand() % MAXSIZE + MINSIZE);
-			float y = float(rand() % MAXSIZE + MINSIZE);
-			BWpoints.push_back(new DVertex(x, y, i));
-			ver.push_back(new VoronoiPoint(x, y));
-		}
+			Voronoi* vdg;
+			vector<VoronoiPoint*> ver;
+			vector<VEdge> edges;
 
-		{
-			float minMax = center;
-			sf::Vector2f starTop = { center, center - minMax };
-			sf::Vector2f starLeft = { center - minMax, center };
-			sf::Vector2f starRight = { center + minMax, center };
-			sf::Vector2f starBottom = { center, center + minMax };
+			//INITIALIZATION
+			for (vector<VoronoiPoint*>::iterator i = ver.begin(); i != ver.end(); i++)
+				delete((*i));
+			ver.clear();
+			edges.clear();
 
-			BWpoints.push_back(new DVertex(starTop, BWpoints.size()));
-			BWpoints.push_back(new DVertex(starLeft, BWpoints.size()));
-			BWpoints.push_back(new DVertex(starRight, BWpoints.size()));
-			BWpoints.push_back(new DVertex(starBottom, BWpoints.size()));
 
-			BWpoints.push_back(new DVertex(MINSIZE, MINSIZE, BWpoints.size()));
-			BWpoints.push_back(new DVertex(MAXSIZE + MINSIZE, MINSIZE, BWpoints.size()));
-			BWpoints.push_back(new DVertex(MAXSIZE + MINSIZE, MAXSIZE + MINSIZE, BWpoints.size()));
-			BWpoints.push_back(new DVertex(MINSIZE, MAXSIZE + MINSIZE, BWpoints.size()));
+			//Create Seed Points
+			vector<HALF_EDGE::HE_Vertex*> BWpoints;
+			{
+				for (size_t i = 0; i < SEEDS; i++)
+				{
+					float x = float(rand() % MAXSIZE + MINSIZE);
+					float y = float(rand() % MAXSIZE + MINSIZE);
+					BWpoints.push_back(DBG_NEW HALF_EDGE::HE_Vertex(x, y, i));
+					ver.push_back(DBG_NEW VoronoiPoint(x, y));
+				}
 
-			ver.push_back(new VoronoiPoint(double(MINSIZE), double(MINSIZE)));
-			ver.push_back(new VoronoiPoint(double(MAXSIZE + MINSIZE), double(MINSIZE)));
-			ver.push_back(new VoronoiPoint(double(MAXSIZE + MINSIZE), double(MAXSIZE + MINSIZE)));
-			ver.push_back(new VoronoiPoint(double(MINSIZE), double(MAXSIZE + MINSIZE)));
+				{
+					float minMax = CENTER;
+					sf::Vector2f starTop = { CENTER, CENTER - minMax };
+					sf::Vector2f starLeft = { CENTER - minMax, CENTER };
+					sf::Vector2f starRight = { CENTER + minMax, CENTER };
+					sf::Vector2f starBottom = { CENTER, CENTER + minMax };
 
-			ver.push_back(new VoronoiPoint(starTop.x, starTop.y));
-			ver.push_back(new VoronoiPoint(starLeft.x, starLeft.y));
-			ver.push_back(new VoronoiPoint(starRight.x, starRight.y));
-			ver.push_back(new VoronoiPoint(starBottom.x, starBottom.y));
-		}
-	}
+					BWpoints.push_back(DBG_NEW HALF_EDGE::HE_Vertex(MINSIZE, MINSIZE, BWpoints.size()));
+					BWpoints.push_back(DBG_NEW HALF_EDGE::HE_Vertex(MAXSIZE + MINSIZE, MINSIZE, BWpoints.size()));
+					BWpoints.push_back(DBG_NEW HALF_EDGE::HE_Vertex(MAXSIZE + MINSIZE, MAXSIZE + MINSIZE, BWpoints.size()));
+					BWpoints.push_back(DBG_NEW HALF_EDGE::HE_Vertex(MINSIZE, MAXSIZE + MINSIZE, BWpoints.size()));
 
-	/////////FORTUNES ALGORITHM///////////////////
-	vdg = new Voronoi();
-	std::cout << "FORTUNES ALGORITHM\n";
-	auto start = std::chrono::system_clock::now();
+					BWpoints.push_back(DBG_NEW HALF_EDGE::HE_Vertex(starTop, BWpoints.size()));
+					BWpoints.push_back(DBG_NEW HALF_EDGE::HE_Vertex(starLeft, BWpoints.size()));
+					BWpoints.push_back(DBG_NEW HALF_EDGE::HE_Vertex(starRight, BWpoints.size()));
+					BWpoints.push_back(DBG_NEW HALF_EDGE::HE_Vertex(starBottom, BWpoints.size()));
 
-	edges = vdg->ComputeVoronoiGraph(ver, MINSIZE, MINSIZE + MAXSIZE);
 
-	auto end = std::chrono::system_clock::now();
-	std::chrono::duration<double> elapsed_seconds = end - start;
-	std::cout << "elapsed time: " << elapsed_seconds.count() << "s\n";
-	delete vdg;
-	/////////////////////////////////////////////
-	std::cout << "\nBOWYER-WATSON TRIANGULATION ALGORITHM\n";
-	start = std::chrono::system_clock::now();
-	Delunay triangulation;
-	const std::vector<Triangle> triangles = triangulation.Triangulate(BWpoints);
-	end = std::chrono::system_clock::now();
-	elapsed_seconds = end - start;
-	std::cout << "elapsed time: " << elapsed_seconds.count() << "s\n";
-	std::cout << triangles.size() << " triangles generated\n";
+					ver.push_back(DBG_NEW VoronoiPoint(double(MINSIZE), double(MINSIZE)));
+					ver.push_back(DBG_NEW VoronoiPoint(double(MAXSIZE + MINSIZE), double(MINSIZE)));
+					ver.push_back(DBG_NEW VoronoiPoint(double(MAXSIZE + MINSIZE), double(MAXSIZE + MINSIZE)));
+					ver.push_back(DBG_NEW VoronoiPoint(double(MINSIZE), double(MAXSIZE + MINSIZE)));
 
-	start = std::chrono::system_clock::now();
+					ver.push_back(DBG_NEW VoronoiPoint(starTop.x, starTop.y));
+					ver.push_back(DBG_NEW VoronoiPoint(starLeft.x, starLeft.y));
+					ver.push_back(DBG_NEW VoronoiPoint(starRight.x, starRight.y));
+					ver.push_back(DBG_NEW VoronoiPoint(starBottom.x, starBottom.y));
+				}
+			}
 
-	//for (auto& vert : triangulation.getSuperTriangle())
-	//{
-	//	vert->arrayIndex = BWpoints.size();
-	//	BWpoints.push_back(vert);
-	//}
+			/////////FORTUNES ALGORITHM///////////////////
+			//vdg = DBG_NEW Voronoi();
+			std::cout << "FORTUNES ALGORITHM\n";
+			auto start = std::chrono::system_clock::now();
 
-	std::vector<pair<unsigned int, unsigned int>> EdgeIndex;
-	
-	for (const Triangle &triangle : triangles)
-	{
-		EdgeIndex.push_back(make_pair(triangle.v1->arrayIndex, triangle.v2->arrayIndex));
-		EdgeIndex.push_back(make_pair(triangle.v2->arrayIndex, triangle.v3->arrayIndex));
-		EdgeIndex.push_back(make_pair(triangle.v3->arrayIndex, triangle.v1->arrayIndex));
-	}
+			//edges = vdg->ComputeVoronoiGraph(ver, MINSIZE, MINSIZE + MAXSIZE);
 
-	map< pair<unsigned int, unsigned int>, HALF_EDGE::HE_Edge* > Edges;
-	std::vector<HALF_EDGE::HE_Vertex*> vertexList;
-	for (auto &point : BWpoints)
-	{
-		HALF_EDGE::HE_Vertex* vertex = new HALF_EDGE::HE_Vertex();
-		vertex->point = point;
-		vertexList.push_back(vertex);
-	}
-	std::vector<HALF_EDGE::HE_Face*> faceList;
+			auto end = std::chrono::system_clock::now();
+			std::chrono::duration<double> elapsed_seconds = end - start;
+			perfData[perfDataIndex].FortunesTime += elapsed_seconds.count();
+			std::cout << "elapsed time: " << elapsed_seconds.count() << "s\n";
+			//delete vdg;
+			/////////////////////////////////////////////
 
-	for (int i = 0; i < triangles.size(); i++)
-	{
-		const int offset = i * 3;
-		HALF_EDGE::HE_Face* tempF = new HALF_EDGE::HE_Face();
-		tempF->circumCenter = sf::Vector2f(triangles[i].circle.x, triangles[i].circle.y);
-		tempF->radius = triangles[i].circle.radius;
-		for (size_t k = 0; k < 3; k++)
-		{
-			const int location = offset + k;
+			////BOWYER-WATSON TRIANGULATION ALGORITHM////
+			std::cout << "\nBOWYER-WATSON TRIANGULATION ALGORITHM\n";
+			Delunay triangulation;
 
-			pair<unsigned int, unsigned int> memEdges(EdgeIndex[location]);
-			Edges[memEdges] = new HALF_EDGE::HE_Edge();
-			Edges[memEdges]->face = tempF;
+			start = std::chrono::system_clock::now();
+			const std::vector<Triangle> triangles = triangulation.Triangulate(BWpoints);
 
-			Edges[memEdges]->vert = vertexList[memEdges.first];
-			Edges[memEdges]->vert->edge = Edges[EdgeIndex[offset]];
-		}
+			end = std::chrono::system_clock::now();
+			elapsed_seconds = end - start;
+			perfData[perfDataIndex].BowyerTriangulation += elapsed_seconds.count();
+			if (RENDERING)
+			{
+				std::cout << "elapsed time: " << elapsed_seconds.count() << "s\n";
+				std::cout << triangles.size() << " triangles generated\n";
+			}
+			/////////////////////////////////////////////
+			start = std::chrono::system_clock::now();
 
-		tempF->edge = Edges[EdgeIndex[offset]];
+			std::vector<pair<unsigned int, unsigned int>> EdgeIndex;
 
-		for (size_t k = 0; k < 3; k++)
-		{
-			const int location = offset + k;
-			Edges[EdgeIndex[location]]->setNext(
-				Edges[EdgeIndex[offset + (k + 1) % 3]]);
+			for (const Triangle &triangle : triangles)
+			{
+				EdgeIndex.push_back(make_pair(triangle.v1->arrayIndex, triangle.v2->arrayIndex));
+				EdgeIndex.push_back(make_pair(triangle.v2->arrayIndex, triangle.v3->arrayIndex));
+				EdgeIndex.push_back(make_pair(triangle.v3->arrayIndex, triangle.v1->arrayIndex));
+			}
+
+			map< pair<unsigned int, unsigned int>, HALF_EDGE::HE_Edge* > edgeList;
+			std::vector<HALF_EDGE::HE_Face*>						   	 faceList;
+
+			for (int i = 0; i < triangles.size(); i++)
+			{
+				const int offset = i * 3;
+				HALF_EDGE::HE_Face* tempF = DBG_NEW HALF_EDGE::HE_Face();
+				tempF->circumCenter = sf::Vector2f(triangles[i].circle.x, triangles[i].circle.y);
+				tempF->radius = triangles[i].circle.radius;
+				for (size_t k = 0; k < 3; k++)
+				{
+					const int location = offset + k;
+
+					pair<unsigned int, unsigned int> memEdges(EdgeIndex[location]);
+					edgeList[memEdges] = DBG_NEW HALF_EDGE::HE_Edge();
+					edgeList[memEdges]->face = tempF;
+
+					edgeList[memEdges]->vert = BWpoints[memEdges.second];
+					edgeList[memEdges]->vert->edge = edgeList[EdgeIndex[offset]];
+				}
+
+				tempF->edge = edgeList[EdgeIndex[offset]];
+
+				for (size_t k = 0; k < 3; k++)
+				{
+					const int location = offset + k;
+					edgeList[EdgeIndex[location]]->setNext(
+						edgeList[EdgeIndex[offset + (k + 1) % 3]]);
+
+					pair<unsigned int, unsigned int> otherPair = make_pair(EdgeIndex[location].second, EdgeIndex[location].first);
+					if (edgeList.find(otherPair) != edgeList.end())
+					{
+						edgeList[EdgeIndex[location]]->setTwin(edgeList[otherPair]);
+					}
+
+				}
+				faceList.push_back(tempF);
+			}
 			
-			pair<unsigned int, unsigned int> otherPair = make_pair(EdgeIndex[location].second, EdgeIndex[location].first);
-			if (Edges.find(otherPair) != Edges.end())
+
+#if RENDERING
+			std::vector <HALF_EDGE::HE_Vertex*> faceEdgePoints;
+			for (auto &face : faceList)
 			{
-				Edges[EdgeIndex[location]]->setTwin(Edges[otherPair]);
+				HALF_EDGE::getFaceVertices(faceEdgePoints, face);
 			}
 
-		}
-		faceList.push_back(tempF);
-	}
-	
-	std::vector <HALF_EDGE::HE_Vertex*> faceEdgePoints;
-	for (auto &face : faceList)
-	{
-		HALF_EDGE::getFaceVertices(faceEdgePoints, face);
-	}
-
-	std::vector <HALF_EDGE::HE_Edge*> faceEdges;
-	for (auto &face : faceList)
-	{
-		HALF_EDGE::getFaceEdges(faceEdges, face);
-	}
-
-	std::vector<VoronoiEdge*> allVoronoiEdges;
-	for (size_t i = 0; i < faceList.size(); i++)
-	{
-		HALF_EDGE::HE_Edge* e1 = faceList[i]->edge;
-		HALF_EDGE::HE_Edge* e2 = e1->next;
-		HALF_EDGE::HE_Edge* e3 = e2->next;
- 
-		sf::Vector2f* v1 = e1->vert->point;
-		sf::Vector2f* v2 = e2->vert->point;
-		sf::Vector2f* v3 = e3->vert->point;
-
-		sf::Vector2f voronoiVertex = faceList[i]->circumCenter;
-
-		addVoronoiEdge(e1, voronoiVertex, allVoronoiEdges);
-		addVoronoiEdge(e2, voronoiVertex, allVoronoiEdges);
-		addVoronoiEdge(e3, voronoiVertex, allVoronoiEdges);
-	}	
-
-	end = std::chrono::system_clock::now();
-	std::cout << "\nTRIANGULATION & VORONOI GENERATION\n";
-	elapsed_seconds = end - start + elapsed_seconds;
-	std::cout << "elapsed time: " << elapsed_seconds.count() << "s\n";
-
-	std::vector<VoronoiCell> voronoiCells;
-	for (int i = 0; i < allVoronoiEdges.size(); i++)
-	{
-		VoronoiEdge* e = allVoronoiEdges[i];
-
-		int index = -1;
-		//Find the position in the list of all cells that includes this site
-		for (int k = 0; k < voronoiCells.size(); k++)
-		{
-			if (e->site == voronoiCells[k].site)
+			std::vector <HALF_EDGE::HE_Edge*> faceEdges;
+			for (auto &face : faceList)
 			{
-				index = k;
-				break;
+				HALF_EDGE::getFaceEdges(faceEdges, face);
 			}
-		}
+#endif
 
-		int cellPos = index;
-		//No cell was found so we need to create a new cell
-		if (cellPos == -1)
-		{
-			VoronoiCell newCell(e->site);
-
-			voronoiCells.push_back(newCell);
-
-			voronoiCells.back().edges.push_back(e);
-		}
-		else
-		{
-			voronoiCells[cellPos].edges.push_back(e);
-		}
-	}
-
-	//RENDERING
-
-	//VORONOI CELLS
-	//std::vector<sf::Vertex*> polygons;
-	std::vector<Polygon> polygons;
-	//polygons.resize(voronoiCells.size());
-	int count = 0;
-	bool pST = false;
-	vector<sf::CircleShape> seedPoints;
-	for (auto &cell : voronoiCells)
-	{
-		
-		sf::Color color(rand() % 200, rand() % 200, rand() % 200);
-		pST = false;
-		
-		#if 0
-		for (int i = 0; i < cell.edges.size(); i++)
-		{
-			if (!(cell.site.x < MAXSIZE+MINSIZE && cell.site.x > MINSIZE) &&
-				!(cell.site.y < MAXSIZE + MINSIZE && cell.site.y > MINSIZE))
+			std::vector<VoronoiEdge*> allVoronoiEdges;
+			for (size_t i = 0; i < faceList.size(); i++)
 			{
-				pST = true;
-				break;
-			}
-			if (!(cell.edges[i]->site.x < MAXSIZE + MINSIZE && cell.edges[i]->site.x > MINSIZE) &&
-				!(cell.edges[i]->site.y < MAXSIZE + MINSIZE && cell.edges[i]->site.y > MINSIZE))
-			{
-				pST = true;
-				break;
+				HALF_EDGE::HE_Edge* e1 = faceList[i]->edge;
+				HALF_EDGE::HE_Edge* e2 = e1->next;
+				HALF_EDGE::HE_Edge* e3 = e2->next;
+
+				sf::Vector2f* v1 = e1->vert->point;
+				sf::Vector2f* v2 = e2->vert->point;
+				sf::Vector2f* v3 = e3->vert->point;
+
+				sf::Vector2f voronoiVertex = faceList[i]->circumCenter;
+
+				addVoronoiEdge(e1, voronoiVertex, allVoronoiEdges);
+				addVoronoiEdge(e2, voronoiVertex, allVoronoiEdges);
+				addVoronoiEdge(e3, voronoiVertex, allVoronoiEdges);
 			}
 
-			if (!(cell.edges[i]->v1.x < MAXSIZE + MINSIZE && cell.edges[i]->v1.x > MINSIZE) &&
-				!(cell.edges[i]->v1.y < MAXSIZE + MINSIZE && cell.edges[i]->v1.y > MINSIZE))
+			end = std::chrono::system_clock::now();
+			std::cout << "\nTRIANGULATION & VORONOI GENERATION\n";
+			elapsed_seconds = end - start + elapsed_seconds;
+			perfData[perfDataIndex].TriToVoronoi += elapsed_seconds.count();
+			std::cout << "elapsed time: " << elapsed_seconds.count() << "s\n";
+
+			std::vector<VoronoiCell> voronoiCells;
+			voronoiCells.reserve(BWpoints.size());
+			for (int i = 0; i < allVoronoiEdges.size(); i++)
 			{
-				pST = true;
-				break;
-			}
+				VoronoiEdge* e = allVoronoiEdges[i];
 
-			if (!(cell.edges[i]->v2.x < MAXSIZE + MINSIZE && cell.edges[i]->v2.x > MINSIZE) &&
-				!(cell.edges[i]->v2.y < MAXSIZE + MINSIZE && cell.edges[i]->v2.y > MINSIZE))
-			{
-				pST = true;
-				break;
-			}
-		}
-		if (pST)
-			continue;
-		#endif
-
-		Polygon polygon;
-		sf::Vector2f polyCenter;
-		int vertCount = 0;
-		for (int i = 0; i < cell.edges.size(); i++)
-		{
-			sf::Vector2f p3 = cell.edges[i]->v1;
-			sf::Vector2f p2 = cell.edges[i]->v2;
-			sf::Vertex* test = new sf::Vertex[3];
-			test[0] = *cell.site;
-			test[0].color = color;
-			test[1] = p2;
-			test[1].color = color;
-			test[2] = p3;
-			test[2].color = color;
-
-			sf::Vector2f v1Result;
-			sf::Vector2f v2Result;
-			bool draw = true;
-			float halfwidth = float(MAXSIZE / 2)+1.0f;
-			sf::Vector2f boundries[4];
-			boundries[0] = { center - halfwidth, center - halfwidth };
-			boundries[1] = { center - halfwidth, center + halfwidth };
-			boundries[2] = { center + halfwidth, center + halfwidth };
-			boundries[3] = { center + halfwidth, center - halfwidth };
-
-			#if 0
-			for (int k = 0; k < 4; k++)
-			{
-				sf::Vector2f result;
-				lineIntersection(test[0].position, test[1].position, boundries[k], boundries[(k + 1) % 4], result);
-				if (result.x != 0 && result.y != 0)
+				int index = -1;
+				//Find the position in the list of all cells that includes this site
+				for (int k = 0; k < voronoiCells.size(); k++)
 				{
-					test[1].position = result;
-					break;
-				}
-			}
-			for (int k = 0; k < 4; k++)
-			{
-				sf::Vector2f result;
-				lineIntersection(test[0].position, test[2].position, boundries[k], boundries[(k + 1) % 4], result);
-				if (result.x != 0 && result.y != 0)
-				{
-					test[2].position = result;
-					break;
-				}
-			}
-			#endif	
-
-			#if 1
-			//for (int k = 1; k < 3; k++)
-			{
-				/*if (outsideSquare(test[1].position) && outsideSquare(test[2].position))
-					continue;*/
-
-
-				if (LiangBarsky(center-halfwidth, center+halfwidth,
-					center+halfwidth, center-halfwidth,
-					test[1].position, test[2].position, v1Result, v2Result))
-				{
-
-					if (v1Result != test[1].position)
+					if (e->site == voronoiCells[k].site)
 					{
-						sf::Vector2f v1ResultN;
-						sf::Vector2f v2ResultN;
-						if (LiangBarsky(center - halfwidth, center + halfwidth,
-							center + halfwidth, center - halfwidth,
-							test[0].position, test[1].position, v1ResultN, v2ResultN))
-						{
-							sf::Vertex nVertex;
-							nVertex = *cell.site;
-							nVertex.color = color;
-							polygon.m_vertices.push_back(nVertex);
-
-							nVertex = v1Result;
-							nVertex.color = color;
-							polygon.m_vertices.push_back(nVertex);
-
-							nVertex = v2ResultN;
-							nVertex.color = color;
-							polygon.m_vertices.push_back(nVertex);
-
-							polyCenter += v1Result;
-							polyCenter += v2ResultN;
-							vertCount += 2;
-						}
-
-						
+						index = k;
+						break;
 					}
-					if (v2Result != test[2].position)
-					{
-						sf::Vector2f v1ResultN;
-						sf::Vector2f v2ResultN;
-						if (LiangBarsky(center - halfwidth, center + halfwidth,
-							center + halfwidth, center - halfwidth,
-							test[0].position, test[2].position, v1ResultN, v2ResultN))
-						{
-							sf::Vertex nVertex;
-							nVertex = *cell.site;
-							nVertex.color = color;
-							polygon.m_vertices.push_back(nVertex);
+				}
 
-							nVertex = v2Result;
-							nVertex.color = color;
-							polygon.m_vertices.push_back(nVertex);
+				int cellPos = index;
+				//No cell was found so we need to create a DBG_NEW cell
+				if (cellPos == -1)
+				{
+					VoronoiCell newCell(e->site);
 
-							nVertex = v2ResultN;
-							nVertex.color = color;
-							polygon.m_vertices.push_back(nVertex);
+					voronoiCells.push_back(newCell);
 
-							polyCenter += v2Result;
-							polyCenter += v2ResultN;
-							vertCount += 2;
-						}
-
-						
-					}
-					
-
-					test[1].position = v1Result;
-					test[2].position = v2Result;
-					/*if (outsideSquare(v1Result))
-						test[k].position = v2Result;*/
+					voronoiCells.back().edges.push_back(e);
 				}
 				else
 				{
-					bool passed = false;
-					if (LiangBarsky(center - halfwidth, center + halfwidth,
-						center + halfwidth, center - halfwidth,
-						test[0].position, test[2].position, v1Result, v2Result))
+					voronoiCells[cellPos].edges.push_back(e);
+				}
+			}
+
+			//RENDERING
+#if RENDERING
+	//VORONOI CELLS
+	//std::vector<sf::Vertex*> polygons;
+			std::vector<Polygon> polygons;
+			//polygons.resize(voronoiCells.size());
+			vector<sf::CircleShape> seedPoints;
+			for (auto &cell : voronoiCells)
+			{
+				sf::Color color(rand() % 200, rand() % 200, rand() % 200);
+
+				Polygon polygon;
+				sf::Vector2f polyCenter;
+				int vertCount = 0;
+				for (int i = 0; i < cell.edges.size(); i++)
+				{
+					sf::Vector2f p3 = cell.edges[i]->v1;
+					sf::Vector2f p2 = cell.edges[i]->v2;
+					sf::Vertex test[3];
+					test[0] = *cell.site;
+					test[0].color = color;
+					test[1] = p2;
+					test[1].color = color;
+					test[2] = p3;
+					test[2].color = color;
+
+					sf::Vector2f v1Result;
+					sf::Vector2f v2Result;
+					bool draw = true;
+					float halfwidth = float(MAXSIZE / 2) + 1.0f;
+
+#if 1
+					if (LiangBarsky(CENTER - halfwidth, CENTER + halfwidth,
+						CENTER + halfwidth, CENTER - halfwidth,
+						test[1].position, test[2].position, v1Result, v2Result))
 					{
-						test[0].position = v1Result;
+
+						if (v1Result != test[1].position)
+						{
+							sf::Vector2f v1ResultN;
+							sf::Vector2f v2ResultN;
+							if (LiangBarsky(CENTER - halfwidth, CENTER + halfwidth,
+								CENTER + halfwidth, CENTER - halfwidth,
+								test[0].position, test[1].position, v1ResultN, v2ResultN))
+							{
+								sf::Vertex nVertex;
+								nVertex = *cell.site;
+								nVertex.color = color;
+								polygon.m_vertices.push_back(nVertex);
+
+								nVertex = v1Result;
+								nVertex.color = color;
+								polygon.m_vertices.push_back(nVertex);
+
+								nVertex = v2ResultN;
+								nVertex.color = color;
+								polygon.m_vertices.push_back(nVertex);
+
+								polyCenter += v1Result;
+								polyCenter += v2ResultN;
+								vertCount += 2;
+							}
+
+
+						}
+						if (v2Result != test[2].position)
+						{
+							sf::Vector2f v1ResultN;
+							sf::Vector2f v2ResultN;
+							if (LiangBarsky(CENTER - halfwidth, CENTER + halfwidth,
+								CENTER + halfwidth, CENTER - halfwidth,
+								test[0].position, test[2].position, v1ResultN, v2ResultN))
+							{
+								sf::Vertex nVertex;
+								nVertex = *cell.site;
+								nVertex.color = color;
+								polygon.m_vertices.push_back(nVertex);
+
+								nVertex = v2Result;
+								nVertex.color = color;
+								polygon.m_vertices.push_back(nVertex);
+
+								nVertex = v2ResultN;
+								nVertex.color = color;
+								polygon.m_vertices.push_back(nVertex);
+
+								polyCenter += v2Result;
+								polyCenter += v2ResultN;
+								vertCount += 2;
+							}
+
+
+						}
+
+						test[1].position = v1Result;
 						test[2].position = v2Result;
-						passed = true;
 					}
-					if (LiangBarsky(center - halfwidth, center + halfwidth,
-						center + halfwidth, center - halfwidth,
-						test[0].position, test[1].position, v1Result, v2Result))
+					else
 					{
-						test[0].position = v1Result;
-						test[1].position = v2Result;
-						passed = true;
+						bool passed = false;
+						if (LiangBarsky(CENTER - halfwidth, CENTER + halfwidth,
+							CENTER + halfwidth, CENTER - halfwidth,
+							test[0].position, test[2].position, v1Result, v2Result))
+						{
+							test[0].position = v1Result;
+							test[2].position = v2Result;
+							passed = true;
+						}
+						if (LiangBarsky(CENTER - halfwidth, CENTER + halfwidth,
+							CENTER + halfwidth, CENTER - halfwidth,
+							test[0].position, test[1].position, v1Result, v2Result))
+						{
+							test[0].position = v1Result;
+							test[1].position = v2Result;
+							passed = true;
+						}
+						if (!passed)
+							draw = false;
 					}
-					if (!passed)
-						draw = false;
-					/*test[1].position = cell.edges[(i-1)% cell.edges.size()]->v2;
-					test[2].position = cell.edges[(i+1) % cell.edges.size()]->v1;*/
-					//draw = false;
-					
+
+#endif
+					if (draw)
+					{
+						polyCenter += test[1].position;
+						polyCenter += test[2].position;
+						vertCount += 2;
+						polygon.m_vertices.push_back(test[0]);
+						polygon.m_vertices.push_back(test[1]);
+						polygon.m_vertices.push_back(test[2]);
+					}
+				}
+				polyCenter.x /= vertCount;
+				polyCenter.y /= vertCount;
+				polygon.m_center.setPosition(polyCenter);
+				polygon.setOrigin(polygon.m_center.getPosition());
+				polygon.setPosition(polygon.m_center.getPosition());
+
+				polygons.push_back(polygon);
+			}
+
+
+			std::vector<sf::Vertex*> lines;
+			{
+
+
+				//TRIANGULATION
+				int stride = 3;
+				bool once = true;
+				for (size_t i = 0; i < triangles.size(); i++)
+				{
+					int offset = i * stride;
+					for (size_t k = 0; k < 3; k++)
+					{
+						sf::Vector2f* start = faceEdgePoints[offset + k]->point;
+						sf::Vector2f* end = faceEdgePoints[offset + (k + 1) % 3]->point;
+
+						sf::Vertex* test = DBG_NEW sf::Vertex[2];
+						test[0] = sf::Vector2f(start->x, start->y);
+						test[1] = sf::Vector2f(end->x, end->y);
+						lines.push_back(test);
+						lines.back()[0].color = sf::Color(0, 255, 0);
+						lines.back()[1].color = sf::Color(0, 255, 0);
+					}
 				}
 
+				//FORTUNES VORONOI EDGES
+				/*for (int i = 0; i < edges.size(); i++)
+				{
+					sf::Vertex* test = DBG_NEW sf::Vertex[2];
+					test[0] = sf::Vector2f(edges[i].VertexA.x, edges[i].VertexA.y);
+					test[1] = sf::Vector2f(edges[i].VertexB.x, edges[i].VertexB.y);
+					lines.push_back(test);
+				}*/
+
+
+
+				//for (size_t i = 0; i < faceList.size(); i++)
+				//{
+				//	//if (faceList[i]->radius < MAXSIZE)
+				//	{
+				//		sf::CircleShape point;
+				//		point.setRadius(faceList[i]->radius);
+				//		point.setPosition(faceList[i]->circumCenter - sf::Vector2f(faceList[i]->radius, faceList[i]->radius));
+				//		point.setOutlineThickness(1.0f);
+				//		point.setOutlineColor({ 255,0,255 });
+				//		point.setFillColor(sf::Color::Transparent);
+				//		circumPoints.push_back(point);
+
+				//		sf::CircleShape point;
+				//		point.setRadius(2);
+				//		point.setPosition(faceList[i]->circumCenter - sf::Vector2f(2, 2));
+				//		point.setFillColor({ 0,0,255 });
+				//		circumPoints.push_back(point);
+				//	}
+				//}
+
 			}
-			#endif
-			if (draw)
+
+
+			sf::RectangleShape rect;
+			rect.setFillColor(sf::Color::Transparent);
+			rect.setOutlineThickness(2);
+			rect.setOutlineColor({ 255,255,255 });
+			rect.setSize({ float(MAXSIZE),float(MAXSIZE) });
+			rect.setPosition({ float(MINSIZE), float(MINSIZE) });
+
+			std::vector<sf::Vector2f> distances;
+			for (auto &polygon : polygons)
 			{
-				polyCenter += test[1].position;
-				polyCenter += test[2].position;
-				vertCount += 2;
-				polygon.m_vertices.push_back(test[0]);
-				polygon.m_vertices.push_back(test[1]);
-				polygon.m_vertices.push_back(test[2]);
+
+				distances.push_back(normalize(polygon.m_center.getPosition() - sf::Vector2f(CENTER, CENTER)).first);
 			}
-		}
-		polyCenter.x /= vertCount;
-		polyCenter.y /= vertCount;
-		polygon.m_center.setPosition(polyCenter);
-		polygon.setOrigin(polygon.m_center.getPosition());
-		polygon.setPosition(polygon.m_center.getPosition());
 
-		polygons.push_back(polygon);
-		count++;
-		/*break;*/
-	}
-
-	
-	std::vector<sf::Vertex*> lines;
-	{
-
-	
-	//TRIANGULATION
-	/*int stride = 3;
-	bool once = true;
-	for (size_t i = 0; i < triangles.size(); i++)
-	{
-		int offset = i * stride;
-		for (size_t k = 0; k < 3; k++)
-		{
-			sf::Vector2f* start = faceEdgePoints[offset + k]->point;
-			sf::Vector2f* end = faceEdgePoints[offset + (k + 1) % 3]->point;
-
-			sf::Vertex* test = new sf::Vertex[2];
-			test[0] = sf::Vector2f(start->x, start->y);
-			test[1] = sf::Vector2f(end->x, end->y);
-			lines.push_back(test);
-			lines.back()[0].color = sf::Color(0, 255, 0);
-			lines.back()[1].color = sf::Color(0, 255, 0);
-		}
-	}*/
-
-	//FORTUNES VORONOI EDGES
-	/*for (int i = 0; i < edges.size(); i++)
-	{
-		sf::Vertex* test = new sf::Vertex[2];
-		test[0] = sf::Vector2f(edges[i].VertexA.x, edges[i].VertexA.y);
-		test[1] = sf::Vector2f(edges[i].VertexB.x, edges[i].VertexB.y);
-		lines.push_back(test);
-	}*/
-
-
-	
-	//for (size_t i = 0; i < faceList.size(); i++)
-	//{
-	//	//if (faceList[i]->radius < MAXSIZE)
-	//	{
-	//		/*sf::CircleShape point;
-	//		point.setRadius(faceList[i]->radius);
-	//		point.setPosition(faceList[i]->circumCenter - sf::Vector2f(faceList[i]->radius, faceList[i]->radius));
-	//		point.setOutlineThickness(1.0f);
-	//		point.setOutlineColor({ 255,0,255 });
-	//		point.setFillColor(sf::Color::Transparent);
-	//		circumPoints.push_back(point);*/
-
-	//		sf::CircleShape point;
-	//		point.setRadius(2);
-	//		point.setPosition(faceList[i]->circumCenter - sf::Vector2f(2, 2));
-	//		point.setFillColor({ 0,0,255 });
-	//		circumPoints.push_back(point);
-	//	}
-	//}
-
-	}
-
-	
-	sf::RectangleShape rect;
-	rect.setFillColor(sf::Color::Transparent);
-	rect.setOutlineThickness(2);
-	rect.setOutlineColor({ 255,255,255 });
-	rect.setSize({ float(MAXSIZE),float(MAXSIZE) });
-	rect.setPosition({ float(MINSIZE), float(MINSIZE)  });
-
-	std::vector<sf::Vector2f> distances;
-	for (auto &polygon : polygons)
-	{
-
-		distances.push_back(normalize(polygon.m_center.getPosition() - sf::Vector2f(center, center)).first);
-	}
-
-	/*for (auto seeds : BWpoints)
-	{
-		sf::CircleShape point;
-				point.setRadius(2);
-				point.setPosition(seeds->getCoordinates() - sf::Vector2f(2, 2));
-				point.setFillColor({ 0,0,255 });
-				seedPoints.push_back(point);
-	}*/
-
-	double dt = 1/60;
-	double timer = 0;
-	bool seperate = false;
-	sf::RenderWindow window(sf::VideoMode(1000, 1000), "SFML works!");
-	while (window.isOpen())
-	{
-		start = std::chrono::system_clock::now();
-		sf::Event event;
-		while (window.pollEvent(event))
-		{
-			switch (event.type)
+			/*for (auto seeds : BWpoints)
 			{
-				case sf::Event::Closed:
-					window.close();
-					break;
-				case sf::Event::KeyPressed:
-					if (event.key.code == sf::Keyboard::Escape)
+				sf::CircleShape point;
+						point.setRadius(2);
+						point.setPosition(seeds->getCoordinates() - sf::Vector2f(2, 2));
+						point.setFillColor({ 0,0,255 });
+						seedPoints.push_back(point);
+			}*/
+			double dt = 1 / 60;
+			double timer = 0;
+			bool seperate = false;
+			sf::RenderWindow window(sf::VideoMode(1000, 1000), "SFML works!");
+			while (window.isOpen())
+			{
+				start = std::chrono::system_clock::now();
+				sf::Event event;
+				while (window.pollEvent(event))
+				{
+					switch (event.type)
+					{
+					case sf::Event::Closed:
 						window.close();
-					break;
-			}
-		}
+						break;
+					case sf::Event::KeyPressed:
+						if (event.key.code == sf::Keyboard::Escape)
+							window.close();
+						break;
+					}
+				}
 
-		window.clear();
-		
-		if(seperate)
-			for (int i = 0; i < polygons.size(); i++)
+				window.clear();
+
+				if (seperate)
+					for (int i = 0; i < polygons.size(); i++)
+					{
+						polygons[i].move(distances[i] * 0.01f);
+					}
+
+				for (int i = 0; i < polygons.size(); i++)
+				{
+					window.draw(polygons[i]);
+				}
+
+				for (auto line : lines)
+					window.draw(line, 2, sf::Lines);
+
+				for (auto point : seedPoints)
+					window.draw(point);
+
+				if (!seperate)
+					window.draw(rect);
+				window.display();
+
+				std::chrono::duration<double> elapsed_seconds = std::chrono::system_clock::now() - start;
+				dt = elapsed_seconds.count();
+				timer += dt;
+				(timer > 4) ? seperate = true : NULL;
+
+			}
+			for (auto &line : lines)
 			{
-				polygons[i].move(distances[i] * 0.01f);
+				delete line;
 			}
-
-		for(int i = 0; i < polygons.size(); i++)
-		{
-			window.draw(polygons[i]);
+#endif
+			for (auto &point : BWpoints)
+			{
+				delete point;
+			}
+			BWpoints.clear();
+			for (auto &point : ver)
+			{
+				delete point;
+			}
+			ver.clear();
+			for (auto &face : faceList)
+			{
+				delete face;
+			}
+			faceList.clear();
+			for (auto &edge : edgeList)
+			{
+				delete edge.second;
+			}
+			edgeList.clear();
+			for (auto &edge : allVoronoiEdges)
+			{
+				delete edge;
+			}
+			allVoronoiEdges.clear();
+			edges.clear();
+			if (RENDERING)
+				break;
 		}
 
-		
-		for(auto line : lines)
-			window.draw(line, 2, sf::Lines);
+		perfData[perfDataIndex].FortunesTime /= NR_OF_REPEATS;
+		perfData[perfDataIndex].BowyerTriangulation /= NR_OF_REPEATS;
+		perfData[perfDataIndex].TriToVoronoi /= NR_OF_REPEATS;
+		perfData[perfDataIndex].Seeds = SEEDS;
+		SEEDS += 20;
 
-		for (auto point : seedPoints)
-			window.draw(point);
-		
-		/*for (auto point : circumPoints)
-		{
-			window.draw(point);
-		}*/
-		if (!seperate)
-			window.draw(rect);
-		window.display();
-
-		std::chrono::duration<double> elapsed_seconds = std::chrono::system_clock::now() - start;
-		dt = elapsed_seconds.count();
-		timer += dt;
-		(timer > 4) ? seperate = true : NULL;
-			
+		perfDataIndex++;
+		if (RENDERING)
+			break;
 	}
-
+	if (!RENDERING && !_DEBUG)
+		WriteToFile();
+	//_CrtDumpMemoryLeaks();
 	return 0; 
 }
 
@@ -931,7 +881,7 @@ void clip(int poly_points[][2], int &poly_size,
 		}
 	}
 
-	// Copying new points into original array 
+	// Copying DBG_NEW points into original array 
 	// and changing the no. of vertices 
 	poly_size = new_poly_size;
 	for (int i = 0; i < poly_size; i++)
@@ -966,7 +916,7 @@ void suthHodgClip(int poly_points[][2], int poly_size,
 #endif
 
 // Liang-Barsky function by Daniel White @ http://www.skytopia.com/project/articles/compsci/clipping.html
-// This function inputs 8 numbers, and outputs 4 new numbers (plus a boolean value to say whether the clipped line is drawn at all).
+// This function inputs 8 numbers, and outputs 4 DBG_NEW numbers (plus a boolean value to say whether the clipped line is drawn at all).
 //
 bool LiangBarsky(double edgeLeft, double edgeRight, double edgeBottom, double edgeTop,   // Define the x/y clipping values for the border.
 	sf::Vector2f src0, sf::Vector2f src1,                 // Define the start and end points of the line.
@@ -1037,4 +987,28 @@ bool LiangBarsky(double edgeLeft, double edgeRight, double edgeBottom, double ed
 	y1clip = y0src + t1 * ydelta;
 
 	return true;        // (clipped) line is drawn
+}
+
+
+void WriteToFile()
+{
+	std::ofstream myfile;
+	myfile.open("Data.txt");
+	myfile << "Index\tSeeds\tFortune\tBowyer-Watson\tTriangulation to Voronoi\tBowyer-Watson to Voronoi\tNr of tests\t";
+	myfile << perfDataIndex << "\n";
+	unsigned int Seeds = 0;
+	double FortunesTime = 0;
+	double BowyerTriangulation = 0;
+	double TriToVoronoi = 0;
+	for (int i = 0; i < perfDataIndex; i++)
+	{
+		myfile << i << "\t";
+		myfile << perfData[i].Seeds << "\t";
+		myfile << perfData[i].FortunesTime << "\t";
+		myfile << perfData[i].BowyerTriangulation << "\t";
+		myfile << perfData[i].TriToVoronoi << "\t";
+		myfile << perfData[i].TriToVoronoi + perfData[i].BowyerTriangulation << "\t";
+		myfile << "\n";
+	}
+	myfile.close();
 }

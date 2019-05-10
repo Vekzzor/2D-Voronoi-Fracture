@@ -98,8 +98,33 @@ namespace HALF_EDGE
 	//Site
 	struct HE_Vertex 
 	{
+		HE_Vertex(int x, int y, int index = -1)
+		{
+			point = new sf::Vector2f(x, y);
+			arrayIndex = index;
+		}
+		HE_Vertex(sf::Vector2f* vector, int index = -1)
+		{
+			point = vector;
+			arrayIndex = index;
+		}
+		HE_Vertex(sf::Vector2f vector, int index = -1)
+		{
+			point = new sf::Vector2f(vector);
+			arrayIndex = index;
+		}
+		~HE_Vertex()
+		{
+			delete point;
+		}
+		sf::Vector2f getCoordinates()
+		{
+			return sf::Vector2f(*point);
+		}
+		
 		HE_Edge *edge = nullptr;  /* rep->tail == this */
 		sf::Vector2f* point = nullptr;
+		int arrayIndex = -1;
 	};
 
 	struct HE_Face 
@@ -107,6 +132,7 @@ namespace HALF_EDGE
 		HE_Edge *edge = nullptr;  /* rep->left == this */
 		sf::Vector2f circumCenter;
 		float radius;
+		HE_Face(){}
 	};
 
 	struct HE_Edge
@@ -116,7 +142,7 @@ namespace HALF_EDGE
 		HE_Edge *twin = nullptr;  /* twin->twin == this */
 		HE_Face *face = nullptr;  /* prev->left == left && next->left == left */
 		HE_Vertex* vert = nullptr;
-
+		HE_Edge(){}
 		void setTwin(HE_Edge* newTwin) {
 			this->twin = newTwin;
 			newTwin->twin = this;
@@ -129,10 +155,11 @@ namespace HALF_EDGE
 			this->prev = newPrev;
 			newPrev->next = this;
 		};
+
 	};
 
 	//Traversing the edges around a face
-	void getFaceEdges(std::vector<HE_Edge*>& edgeList,HE_Face* face)
+	_inline void getFaceEdges(std::vector<HE_Edge*>& edgeList,HE_Face* face)
 	{
 		HE_Edge* start_Edge = face->edge;
 		HE_Edge* half_edge = start_Edge;
@@ -145,7 +172,7 @@ namespace HALF_EDGE
 
 	}
 
-	void getFaceVertices(std::vector<HE_Vertex*>& vertexList, HE_Face* face)
+	_inline void getFaceVertices(std::vector<HE_Vertex*>& vertexList, HE_Face* face)
 	{
 		HE_Edge* start_Edge = face->edge;
 		HE_Edge* half_edge = start_Edge;
@@ -157,7 +184,7 @@ namespace HALF_EDGE
 		} while (half_edge != start_Edge);
 	}
 
-	bool getPolygon(std::vector<sf::Vector2f>& siteList, HE_Vertex* vertex)
+	_inline	bool getPolygon(std::vector<sf::Vector2f>& siteList, HE_Vertex* vertex)
 	{
 		bool hasNeighbor = true;
 		HE_Edge* start_Edge = vertex->edge;
@@ -177,7 +204,7 @@ namespace HALF_EDGE
 	}
 
 	//Traversing the edges around a vertex
-	void getVertexEdges(HE_Vertex* vertex)
+	_inline void getVertexEdges(HE_Vertex* vertex)
 	{
 		HE_Edge* start_Edge = vertex->edge;
 		HE_Edge* half_edge = start_Edge;
@@ -188,7 +215,7 @@ namespace HALF_EDGE
 		} while (half_edge != start_Edge);
 	}
 
-	void getVertexFaces(HE_Vertex* vertex)
+	_inline void getVertexFaces(HE_Vertex* vertex)
 	{
 		HE_Edge* start_Edge = vertex->edge;
 		HE_Edge* half_edge = start_Edge;
@@ -199,11 +226,11 @@ namespace HALF_EDGE
 		} while (half_edge != start_Edge);
 	}
 
-	HE_Vertex* vertexNext(HE_Edge* half_edge)
+	_inline HE_Vertex* vertexNext(HE_Edge* half_edge)
 	{
 		return half_edge->twin->next->vert;
 	}
-	HE_Vertex* vertexPrev(HE_Edge* half_edge)
+	_inline HE_Vertex* vertexPrev(HE_Edge* half_edge)
 	{
 		return half_edge->prev->twin->vert;
 	}
