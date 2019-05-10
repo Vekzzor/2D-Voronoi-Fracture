@@ -89,34 +89,9 @@ std::vector<Point2D> randomPoint(int number) {
 
 int main()
 {
-	//FORTUNES ALGORITHM
-#if 0
-	for (vector<VoronoiPoint*>::iterator i = ver.begin(); i != ver.end(); i++)
-		delete((*i));
-	ver.clear();
-	edges.clear();
-	for (int i = 0; i < 100; i++)
-	{
-		ver.push_back(new VoronoiPoint(rand() % 500, rand() % 500));
-	}
-
-	vdg = new Voronoi();
-	double minY = 0;
-	double maxY = 500;
-	edges = vdg->ComputeVoronoiGraph(ver, minY, maxY);
-	delete vdg;
-	std::vector<sf::Vertex*> lines;
-
-	for (int i = 0; i < edges.size(); i++)
-	{
-		sf::Vertex* test = new sf::Vertex[2];
-		test[0] = sf::Vector2f((edges[i].VertexA.x), (edges[i].VertexA.y));
-		test[1] = sf::Vector2f((edges[i].VertexB.x), (edges[i].VertexB.y));
-		lines.push_back(test);
-	}
-
-#endif
 	sf::RenderWindow window(sf::VideoMode(500, 500), "SFML works!");
+	//FORTUNES ALGORITHM
+
 
 	std::vector<Point2D> points = randomPoint(100);
 	//std::vector<Point2D> points = readPoints("/Users/dkotsur/Projects/KNU/FortuneAlgo/Data/fail_1.txt");

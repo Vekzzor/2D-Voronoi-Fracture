@@ -436,7 +436,7 @@ namespace beachline {
                                   std::vector<HalfEdgePtr> &edges) {
         
         BLNodePtr node, leaf_l, leaf_r;
-        
+
         std::pair<HalfEdgePtr, HalfEdgePtr> twin_edges = make_twins(index_behind, index);
         
         edges.push_back(twin_edges.first);
