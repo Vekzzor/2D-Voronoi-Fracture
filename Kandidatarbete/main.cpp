@@ -3,12 +3,15 @@
 #include "voronoi.h"
 #include <iostream>
 #include <fstream>
-#include "Fortunes/Data Structures/BinTree.h"
 #include "Bowyer-Watson/Delunay.h"
 //#include "Fortunes/Data Structures/DCEL.h"
 #include <math.h> 
 #include <chrono>
 #include <crtdbg.h>
+
+#include "FortuneAlgo/Types/Point2D.h"
+#include "FortuneAlgo/Voronoi/VoronoiDiagram.hpp"
+#include "FortuneAlgo/Datastruct/Beachline.hpp"
 
 #define _CRTDBG_MAP_ALLOC
 #ifdef _DEBUG
@@ -35,10 +38,10 @@ struct PerformanceData
 static unsigned int perfDataIndex = 0;
 
 vector<sf::CircleShape> circumPoints;
-static const int MINSIZE = 300; //55
-static const int MAXSIZE = 400; //390
+static const int MINSIZE = 3000; //55
+static const int MAXSIZE = 4000; //390
 static const float CENTER = float(MINSIZE + (MAXSIZE / 2));
-static int SEEDS = 1000;
+static int SEEDS = 3000;
 
 
 class Polygon : public sf::Drawable, public sf::Transformable
@@ -158,6 +161,52 @@ void addVoronoiEdge(HALF_EDGE::HE_Edge* e, sf::Vector2f center, std::vector<Voro
 		VoronoiEdge(center, voronoiVertexNeighbor, e->prev->vert->point));
 }
 
+void initEdgePointsVis(bl::HalfEdgePtr h, std::vector<double> &x, std::vector<double> &y,
+	const std::vector<Point2D> &points) {
+
+	if (h->vertex != nullptr && h->twin->vertex != nullptr) {
+
+		x[0] = h->vertex->point.x;
+		x[1] = h->twin->vertex->point.x;
+
+		y[0] = h->vertex->point.y;
+		y[1] = h->twin->vertex->point.y;
+
+	}
+	else if (h->vertex != nullptr) {
+
+		x[0] = h->vertex->point.x;
+		y[0] = h->vertex->point.y;
+
+		Point2D norm = (points[h->l_index] - points[h->r_index]).normalized().getRotated90CCW();
+		x[1] = x[0] + norm.x * 1000;
+		y[1] = y[0] + norm.y * 1000;
+
+	}
+	else if (h->twin->vertex != nullptr) {
+
+		x[0] = h->twin->vertex->point.x;
+		y[0] = h->twin->vertex->point.y;
+
+		Point2D norm = (points[h->twin->l_index] - points[h->twin->r_index]).normalized().getRotated90CCW();
+		x[1] = x[0] + norm.x * 1000;
+		y[1] = y[0] + norm.y * 1000;
+
+	}
+	else {
+
+		Point2D p1 = points[h->l_index], p2 = points[h->r_index];
+
+		Point2D norm = (p1 - p2).normalized().getRotated90CCW();
+		Point2D c = 0.5 * (p1 + p2);
+
+		x[0] = c.x + norm.x * 1000;
+		x[1] = c.x - norm.x * 1000;
+
+		y[0] = c.y + norm.y * 1000;
+		y[1] = c.y - norm.y * 1000;
+	}
+}
 int main()
 {
 	//_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
@@ -168,6 +217,12 @@ int main()
 			Voronoi* vdg;
 			vector<VoronoiPoint*> ver;
 			vector<VEdge> edges;
+
+			
+
+			std::vector<Point2D> points;
+			std::vector<bl::HalfEdgePtr> halfedges, faces;
+			std::vector<bl::VertexPtr> vertices;
 
 			//INITIALIZATION
 			for (vector<VoronoiPoint*>::iterator i = ver.begin(); i != ver.end(); i++)
@@ -185,6 +240,8 @@ int main()
 					float y = float(rand() % MAXSIZE + MINSIZE);
 					BWpoints.push_back(DBG_NEW HALF_EDGE::HE_Vertex(x, y, i));
 					ver.push_back(DBG_NEW VoronoiPoint(x, y));
+
+					points.push_back(Point2D(x, y));
 				}
 
 				{
@@ -214,6 +271,16 @@ int main()
 					ver.push_back(DBG_NEW VoronoiPoint(starLeft.x, starLeft.y));
 					ver.push_back(DBG_NEW VoronoiPoint(starRight.x, starRight.y));
 					ver.push_back(DBG_NEW VoronoiPoint(starBottom.x, starBottom.y));
+
+					points.push_back(Point2D(double(MINSIZE), double(MINSIZE)));
+					points.push_back(Point2D(double(MAXSIZE + MINSIZE), double(MINSIZE)));
+					points.push_back(Point2D(double(MAXSIZE + MINSIZE), double(MAXSIZE + MINSIZE)));
+					points.push_back(Point2D(double(MINSIZE), double(MAXSIZE + MINSIZE)));
+
+					points.push_back(Point2D(starTop.x, starTop.y));
+					points.push_back(Point2D(starLeft.x, starLeft.y));
+					points.push_back(Point2D(starRight.x, starRight.y));
+					points.push_back(Point2D(starBottom.x, starBottom.y));
 				}
 			}
 
@@ -221,7 +288,7 @@ int main()
 			//vdg = DBG_NEW Voronoi();
 			std::cout << "FORTUNES ALGORITHM\n";
 			auto start = std::chrono::system_clock::now();
-
+			build_voronoi(points, halfedges, vertices, faces);
 			//edges = vdg->ComputeVoronoiGraph(ver, MINSIZE, MINSIZE + MAXSIZE);
 
 			auto end = std::chrono::system_clock::now();
@@ -515,33 +582,36 @@ int main()
 
 
 				//TRIANGULATION
-				int stride = 3;
-				bool once = true;
-				for (size_t i = 0; i < triangles.size(); i++)
-				{
-					int offset = i * stride;
-					for (size_t k = 0; k < 3; k++)
-					{
-						sf::Vector2f* start = faceEdgePoints[offset + k]->point;
-						sf::Vector2f* end = faceEdgePoints[offset + (k + 1) % 3]->point;
+				//int stride = 3;
+				//bool once = true;
+				//for (size_t i = 0; i < triangles.size(); i++)
+				//{
+				//	int offset = i * stride;
+				//	for (size_t k = 0; k < 3; k++)
+				//	{
+				//		sf::Vector2f* start = faceEdgePoints[offset + k]->point;
+				//		sf::Vector2f* end = faceEdgePoints[offset + (k + 1) % 3]->point;
 
-						sf::Vertex* test = DBG_NEW sf::Vertex[2];
-						test[0] = sf::Vector2f(start->x, start->y);
-						test[1] = sf::Vector2f(end->x, end->y);
-						lines.push_back(test);
-						lines.back()[0].color = sf::Color(0, 255, 0);
-						lines.back()[1].color = sf::Color(0, 255, 0);
-					}
-				}
+				//		sf::Vertex* test = DBG_NEW sf::Vertex[2];
+				//		test[0] = sf::Vector2f(start->x, start->y);
+				//		test[1] = sf::Vector2f(end->x, end->y);
+				//		lines.push_back(test);
+				//		lines.back()[0].color = sf::Color(0, 255, 0);
+				//		lines.back()[1].color = sf::Color(0, 255, 0);
+				//	}
+				//}
 
 				//FORTUNES VORONOI EDGES
-				/*for (int i = 0; i < edges.size(); i++)
-				{
-					sf::Vertex* test = DBG_NEW sf::Vertex[2];
-					test[0] = sf::Vector2f(edges[i].VertexA.x, edges[i].VertexA.y);
-					test[1] = sf::Vector2f(edges[i].VertexB.x, edges[i].VertexB.y);
+				for (size_t i = 0; i < halfedges.size(); ++i) {
+					bl::HalfEdgePtr h = halfedges[i];
+
+					std::vector<double> x(2, 0.0), y(2, 0.0);
+					initEdgePointsVis(h, x, y, points);
+					sf::Vertex* test = new sf::Vertex[2];
+					test[0] = sf::Vector2f(float(x[0]), float(y[0]));
+					test[1] = sf::Vector2f(float(x[1]), float(y[1]));
 					lines.push_back(test);
-				}*/
+				}
 
 
 

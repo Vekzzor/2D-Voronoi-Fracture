@@ -124,7 +124,13 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Bowyer-Watson\Delunay.cpp" />
-    <ClCompile Include="Fortunes\Data Structures\DCEL.cpp" />
+    <ClCompile Include="FortuneAlgo\Datastruct\Beachline.cpp" />
+    <ClCompile Include="FortuneAlgo\Datastruct\DCEL.cpp" />
+    <ClCompile Include="FortuneAlgo\Math\Circle.cpp" />
+    <ClCompile Include="FortuneAlgo\Math\Parabola.cpp" />
+    <ClCompile Include="FortuneAlgo\Types\Point2D.cpp" />
+    <ClCompile Include="FortuneAlgo\Voronoi\VoronoiDiagram.cpp" />
+    <ClCompile Include="Fortunes\Data Structures\DCELHE.cpp" />
     <ClCompile Include="Fortunes\Event\CircleEvent.cpp" />
     <ClCompile Include="Fortunes\Event\Event.cpp" />
     <ClCompile Include="Fortunes\Event\SIteEvent.cpp" />
@@ -135,8 +141,15 @@
   <ItemGroup>
     <ClInclude Include="Bowyer-Watson\delaunay.hpp" />
     <ClInclude Include="Bowyer-Watson\Delunay.h" />
+    <ClInclude Include="FortuneAlgo\Datastruct\Beachline.hpp" />
+    <ClInclude Include="FortuneAlgo\Datastruct\DCEL.hpp" />
+    <ClInclude Include="FortuneAlgo\Math\Circle.hpp" />
+    <ClInclude Include="FortuneAlgo\Math\Parabola.hpp" />
+    <ClInclude Include="FortuneAlgo\Types\Point2D.h" />
+    <ClInclude Include="FortuneAlgo\Visualization\matplotlibcpp.h" />
+    <ClInclude Include="FortuneAlgo\Voronoi\VoronoiDiagram.hpp" />
     <ClInclude Include="Fortunes\Data Structures\BinTree.h" />
-    <ClInclude Include="Fortunes\Data Structures\DCEL.h" />
+    <ClInclude Include="Fortunes\Data Structures\DCELHE.h" />
     <ClInclude Include="Fortunes\Data Structures\LinkedList.h" />
     <ClInclude Include="Fortunes\Event\CircleEvent.h" />
     <ClInclude Include="Fortunes\Event\Event.h" />
