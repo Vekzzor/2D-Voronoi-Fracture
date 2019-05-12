@@ -38,8 +38,8 @@ struct PerformanceData
 static unsigned int perfDataIndex = 0;
 
 vector<sf::CircleShape> circumPoints;
-static const int MINSIZE = 300; //55
-static const int MAXSIZE = 400; //390
+static const int MINSIZE = 3000; //55
+static const int MAXSIZE = 4000; //390
 static const float CENTER = float(MINSIZE + (MAXSIZE / 2));
 static int SEEDS = 100;
 
@@ -963,7 +963,7 @@ void clip(int poly_points[][2], int &poly_size,
 	}
 }
 
-// Implements Sutherland–Hodgman algorithm 
+// Implements Sutherlandï¿½Hodgman algorithm 
 void suthHodgClip(int poly_points[][2], int poly_size,
 	int clipper_points[][2], int clipper_size)
 {
