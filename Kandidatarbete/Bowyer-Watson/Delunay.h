@@ -2,7 +2,7 @@
 #include <SFML/Graphics.hpp>
 #include <cmath>
 #include <limits>
-#include "../Fortunes/Data Structures/DCEL.h"
+#include "../Fortunes/Data Structures/DCELHE.h"
 
 constexpr double eps = 1e-4;
 class DEdge

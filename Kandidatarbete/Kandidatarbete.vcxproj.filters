@@ -36,7 +36,25 @@
     <ClCompile Include="Bowyer-Watson\Delunay.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Fortunes\Data Structures\DCEL.cpp">
+    <ClCompile Include="FortuneAlgo\Datastruct\Beachline.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="FortuneAlgo\Datastruct\DCEL.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="FortuneAlgo\Math\Circle.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="FortuneAlgo\Math\Parabola.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="FortuneAlgo\Types\Point2D.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="FortuneAlgo\Voronoi\VoronoiDiagram.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Fortunes\Data Structures\DCELHE.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -62,13 +80,34 @@
     <ClInclude Include="Fortunes\Data Structures\BinTree.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Fortunes\Data Structures\DCEL.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Bowyer-Watson\Delunay.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Bowyer-Watson\delaunay.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="FortuneAlgo\Datastruct\Beachline.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="FortuneAlgo\Datastruct\DCEL.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="FortuneAlgo\Math\Circle.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="FortuneAlgo\Math\Parabola.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="FortuneAlgo\Types\Point2D.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="FortuneAlgo\Visualization\matplotlibcpp.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="FortuneAlgo\Voronoi\VoronoiDiagram.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Fortunes\Data Structures\DCELHE.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
