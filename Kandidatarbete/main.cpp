@@ -15,11 +15,13 @@
 #define DBG_NEW new ( _NORMAL_BLOCK , __FILE__ , __LINE__ )
 // Replace _NORMAL_BLOCK with _CLIENT_BLOCK if you want the
 // allocations to be of _CLIENT_BLOCK type
+#define DEBUG 1
 #else
+#define DEBUG 0
 #define DBG_NEW new
 #endif
 
-#define RENDERING 0
+#define RENDERING 1
 static const int NR_OF_TESTS = 10;
 static const int NR_OF_REPEATS = 10;
 struct PerformanceData
@@ -36,7 +38,7 @@ vector<sf::CircleShape> circumPoints;
 static const int MINSIZE = 300; //55
 static const int MAXSIZE = 400; //390
 static const float CENTER = float(MINSIZE + (MAXSIZE / 2));
-static int SEEDS = 100;
+static int SEEDS = 1000;
 
 
 class Polygon : public sf::Drawable, public sf::Transformable
@@ -684,7 +686,7 @@ int main()
 		if (RENDERING)
 			break;
 	}
-	if (!RENDERING && !_DEBUG)
+	if (!RENDERING && !DEBUG)
 		WriteToFile();
 	//_CrtDumpMemoryLeaks();
 	return 0; 

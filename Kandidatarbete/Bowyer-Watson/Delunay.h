@@ -57,12 +57,11 @@ private:
 	}
 public:
 	DEdge e[3];
-	HALF_EDGE::HE_Edge* he[3];
 	HALF_EDGE::HE_Vertex* v1;
 	HALF_EDGE::HE_Vertex* v2;
 	HALF_EDGE::HE_Vertex* v3;
 	DCircle circle;
-	HALF_EDGE::HE_Face* face;
+	bool isBad = false;
 	Triangle(HALF_EDGE::HE_Vertex* _v1, HALF_EDGE::HE_Vertex* _v2, HALF_EDGE::HE_Vertex* _v3)
 	  : v1{ _v1 },
 		v2{ _v2 },
@@ -118,6 +117,7 @@ public:
 		 v1	= nullptr;
 		 v2	= nullptr;
 		 v3	= nullptr;
+
 	}
 	void operator=(const Triangle &t)
 	{
@@ -211,9 +211,9 @@ public:
 };
 
 template<class Container, class F>
-auto erase_where(Container& c, F&& f)
+auto erase_where(Container& c, F&& f, int offset = 0)
 {
-	return c.erase(std::remove_if(c.begin(),
+	return c.erase(std::remove_if(c.begin()+offset,
 		c.end(),
 		std::forward<F>(f)),
 		c.end());

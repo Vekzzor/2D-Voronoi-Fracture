@@ -124,6 +124,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Bowyer-Watson\Delunay.cpp" />
+    <ClCompile Include="Fortunes\Data Structures\DCEL.cpp" />
     <ClCompile Include="Fortunes\Event\CircleEvent.cpp" />
     <ClCompile Include="Fortunes\Event\Event.cpp" />
     <ClCompile Include="Fortunes\Event\SIteEvent.cpp" />

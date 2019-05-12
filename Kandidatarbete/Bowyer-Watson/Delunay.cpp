@@ -1,6 +1,6 @@
 #include "Delunay.h"
 #include <chrono>
-
+#include <iostream>
 
 Delunay::Delunay()
 {
@@ -48,28 +48,34 @@ std::vector<Triangle>& Delunay::Triangulate(std::vector<HALF_EDGE::HE_Vertex*>& 
 		_triangles.push_back({ p1, p2, p3 });
 
 		int pointIndex = 0;
-		
+		double circumCheckTime = 0;
+		double dublicateEdgesTime = 0;
+		double triangleCreationTime = 0;
+		double pushBackTime = 0;
 		for (HALF_EDGE::HE_Vertex* const pt : points)
 		{
 			std::vector<DEdge> edges;
-			std::vector<Triangle> tmps;
-			for (const Triangle& t : _triangles)
+			
+			for (Triangle& t : _triangles)
 			{
 				const auto dist = (t.circle.x - pt->point->x) * (t.circle.x - pt->point->x) +
 					(t.circle.y - pt->point->y) * (t.circle.y - pt->point->y);
 				if ((dist - t.circle.radius) <= eps)
 				{
 					//Pushing bad triangle
-					//t.isBad = true;
+					t.isBad = true;
 					for (int i = 0; i < 3; i++)
-						edges.push_back(t.e[i]);
+						edges.push_back(t.e[i]);		
 				}
 				else
 				{
-					tmps.push_back(t);
+					t.isBad = false;
 					//does not contain in his circum center
 				}
 			}
+			auto is_bad = [&](auto const& tri) { return tri.isBad; };
+			erase_where(_triangles, is_bad);
+
 			/* Delete duplicate edges. */
 			std::vector<bool> remove(edges.size(), false);
 			//for (int i = 0; i < edges.size(); ++i)
@@ -104,10 +110,8 @@ std::vector<Triangle>& Delunay::Triangulate(std::vector<HALF_EDGE::HE_Vertex*>& 
 			/* Update triangulation. */
 			for (const DEdge &e : edges)
 			{
-				tmps.push_back(Triangle(e.v1, e.v2, pt));
+				_triangles.push_back(Triangle(e.v1, e.v2, pt));
 			}
-
-			_triangles = tmps;
 #if 0
 			sf::Event event;
 			while (timer < 3)
@@ -186,6 +190,10 @@ std::vector<Triangle>& Delunay::Triangulate(std::vector<HALF_EDGE::HE_Vertex*>& 
 #endif
 		}
 
+	/*	std::cout << circumCheckTime << std::endl;
+		std::cout << dublicateEdgesTime << std::endl;
+		std::cout << triangleCreationTime << std::endl;
+		system("pause");*/
 		auto is_part_STriangle = [&](Triangle const& tri) {
 			return (tri.v1->arrayIndex == -1 || tri.v2->arrayIndex == -1 || tri.v3->arrayIndex == -1); };
 
