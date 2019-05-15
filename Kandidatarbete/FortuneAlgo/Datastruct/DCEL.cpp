@@ -33,8 +33,8 @@ namespace DCEL {
     
     std::pair<HalfEdgePtr, HalfEdgePtr> make_twins(int left_index, int right_index) {
         
-        HalfEdgePtr h = std::make_shared<HalfEdge>(left_index, right_index);
-        HalfEdgePtr h_twin = std::make_shared<HalfEdge>(right_index, left_index);
+        HalfEdgePtr h = DBG_NEW HalfEdge(left_index, right_index);
+        HalfEdgePtr h_twin = DBG_NEW HalfEdge(right_index, left_index);
         
         h->twin = h_twin;
         h_twin->twin = h;

@@ -212,7 +212,8 @@ namespace beachline {
         
         // Remove leaf, because it's replaced by a new subtree
         //        delete node;
-        
+		delete node;
+
         // Insert the node
         new_node->parent = parent_node;
         if (parent_node != nullptr) {
@@ -224,6 +225,7 @@ namespace beachline {
         }
         
         // Rebalance the tree
+		
         node = new_node;
         while (parent_node != nullptr) {
             update_height(parent_node);
@@ -329,7 +331,7 @@ namespace beachline {
         connect(leaf->prev, leaf->next);
         
         //_check_balance(new_root);
-        
+		delete leaf;
         return new_root;
     }
 
@@ -389,13 +391,13 @@ namespace beachline {
                            std::vector<HalfEdgePtr> &edges) {
         
         // create nodes corresponding to branching points
-        BLNodePtr node1 = std::make_shared<BLNode>(std::make_pair(index_behind, index), sweepline, points);
-        BLNodePtr node2 = std::make_shared<BLNode>(std::make_pair(index, index_behind), sweepline, points);
+        BLNodePtr node1 = DBG_NEW BLNode(std::make_pair(index_behind, index), sweepline, points);
+        BLNodePtr node2 = DBG_NEW BLNode(std::make_pair(index, index_behind), sweepline, points);
         
         // create leaf nodes
-        BLNodePtr leaf1 = std::make_shared<BLNode>(std::make_pair(index_behind, index_behind), sweepline, points);
-        BLNodePtr leaf2 = std::make_shared<BLNode>(std::make_pair(index, index), sweepline, points);
-        BLNodePtr leaf3 = std::make_shared<BLNode>(std::make_pair(index_behind, index_behind), sweepline, points);
+        BLNodePtr leaf1 =  DBG_NEW BLNode(std::make_pair(index_behind, index_behind), sweepline, points);
+        BLNodePtr leaf2 =  DBG_NEW BLNode(std::make_pair(index, index), sweepline, points);
+        BLNodePtr leaf3 =  DBG_NEW BLNode(std::make_pair(index_behind, index_behind), sweepline, points);
         
         // adjust tree connections
         node1->right = node2;
@@ -444,14 +446,14 @@ namespace beachline {
         
         if ((*points)[index].x < (*points)[index_behind].x) {
             // Depends on the point order
-            node = std::make_shared<BLNode>(std::make_pair(index, index_behind), sweepline, points);
-            leaf_l = std::make_shared<BLNode>(std::make_pair(index, index), sweepline, points);
-            leaf_r = std::make_shared<BLNode>(std::make_pair(index_behind, index_behind), sweepline, points);
+            node = DBG_NEW BLNode(std::make_pair(index, index_behind), sweepline, points);
+            leaf_l = DBG_NEW BLNode(std::make_pair(index, index), sweepline, points);
+            leaf_r = DBG_NEW BLNode(std::make_pair(index_behind, index_behind), sweepline, points);
             node->edge = twin_edges.second;//twin_edges.first;
         } else {
-            node = std::make_shared<BLNode>(std::make_pair(index_behind, index), sweepline, points);
-            leaf_l = std::make_shared<BLNode>(std::make_pair(index_behind, index_behind), sweepline, points);
-            leaf_r = std::make_shared<BLNode>(std::make_pair(index, index), sweepline, points);
+            node = DBG_NEW BLNode(std::make_pair(index_behind, index), sweepline, points);
+            leaf_l = DBG_NEW BLNode(std::make_pair(index_behind, index_behind), sweepline, points);
+            leaf_r = DBG_NEW BLNode(std::make_pair(index, index), sweepline, points);
             node->edge = twin_edges.first;//twin_edges.second;
         }
         

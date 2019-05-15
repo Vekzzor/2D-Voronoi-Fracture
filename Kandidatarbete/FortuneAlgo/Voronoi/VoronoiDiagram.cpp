@@ -21,37 +21,10 @@
 namespace bl = beachline;
 
 
-struct Event {
-    
-    enum { SITE = 0, CIRCLE = 1, SKIP = 2, };
-    
-    
-    int type;
-    Point2D point;
-    
-    /*
-     Site event attributes:
-     */
-    int index;
-    
-    /*
-     Circle event attributes:
-     */
-    Point2D center;
-    bl::BLNodePtr arc;
-    
-    
-    Event(int _index = -1, int _type = Event::SKIP, const Point2D &_point = Point2D(0.0, 0.0)) :
-	index(_index), type(_type), point(_point), arc(nullptr) {}
-	~Event()
-	{
-		arc.reset();
-	};
-    
-};
 
 
-typedef std::shared_ptr<Event> EventPtr;
+
+
 
 
 struct Point2DComparator {
@@ -99,7 +72,7 @@ EventPtr checkCircleEvent(bl::BLNodePtr n1, bl::BLNodePtr n2, bl::BLNodePtr n3,
     // check circle event
     if (fabs(bottom.y - sweepline) < POINT_EPSILON || sweepline < bottom.y) {
         // create a circle event structure
-        EventPtr e = std::make_shared<Event>(-1, Event::CIRCLE, bottom);
+        EventPtr e = DBG_NEW Event(-1, Event::CIRCLE, bottom);
         // initialize attributes
         e->center = center;
         e->arc = n2;
@@ -115,21 +88,21 @@ EventPtr checkCircleEvent(bl::BLNodePtr n1, bl::BLNodePtr n2, bl::BLNodePtr n3,
 void build_voronoi(const std::vector<Point2D> &points,
                    std::vector<bl::HalfEdgePtr> &halfedges,
                    std::vector<bl::VertexPtr> &vertices,
-                   std::vector<bl::HalfEdgePtr> &faces) {
+                   std::vector<bl::HalfEdgePtr> &faces,
+				   bl::BLNodePtr &root, std::vector<EventPtr> &events) {
     
     // create a priority queue
     std::priority_queue<EventPtr, std::vector<EventPtr>, EventPtrComparator> pq;
     
     // initialize it with all site events
     for (size_t i = 0; i < points.size(); ++i) {
-        pq.push(std::make_shared<Event>(static_cast<int>(i), Event::SITE, points[i]));
+        pq.push(DBG_NEW Event(static_cast<int>(i), Event::SITE, points[i]));
     }
     
     // initialize vector of halfedges for faces
     faces.resize(points.size(), nullptr);
     
     // create a beachline tree
-    bl::BLNodePtr root;
     double sweepline = 0L; // current position of the sweepline
     
     // process events
@@ -137,7 +110,7 @@ void build_voronoi(const std::vector<Point2D> &points,
         
         // extract new event from the queue
         EventPtr e = pq.top(); pq.pop();
-        
+		events.push_back(e);
         // set position of a sweepline
         sweepline = e->point.y;
         
@@ -145,7 +118,7 @@ void build_voronoi(const std::vector<Point2D> &points,
             
             int point_i = e->index;
             if (root == nullptr) { // init empty beachline tree
-                root = std::make_shared<bl::BLNode>(std::make_pair(point_i, point_i), &sweepline, &points);
+                root = DBG_NEW bl::BLNode(std::make_pair(point_i, point_i), &sweepline, &points);
             } else { // if it's not empty
                 
                 bl::BLNodePtr arc = bl::find(root, e->point.x);
@@ -212,7 +185,7 @@ void build_voronoi(const std::vector<Point2D> &points,
             }
             
             // create a new vertex and insert into doubly-connected edge list
-            bl::VertexPtr vertex = std::make_shared<bl::Vertex>(e->center);
+            bl::VertexPtr vertex = DBG_NEW bl::Vertex(e->center);
             bl::HalfEdgePtr h_first = breakpoints.first->edge;
             bl::HalfEdgePtr h_second = breakpoints.second->edge;
             
@@ -282,8 +255,10 @@ void build_voronoi(const std::vector<Point2D> &points,
                 }
             }
         }
+		
     }
-    
+
+	
     // Fill edges corresponding to faces
     for (size_t i = 0; i < halfedges.size(); ++i) {
         bl::HalfEdgePtr he = halfedges[i];

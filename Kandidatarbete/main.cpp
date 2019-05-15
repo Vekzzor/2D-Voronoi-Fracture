@@ -24,7 +24,7 @@
 #endif
 
 #define RENDERING 0
-static const int NR_OF_TESTS = 100;
+static const int NR_OF_TESTS = 40;
 static const int NR_OF_REPEATS = 10;
 struct PerformanceData
 {
@@ -44,8 +44,6 @@ static const float CENTER = float(MINSIZE + (MAXSIZE / 2));
 static const int SEEDSMAX = 30276;
 static const int SEEDINCREMENT = (SEEDSMAX/ NR_OF_TESTS);
 static int SEEDS = SEEDINCREMENT;
-static int SEEDS_SQRT = sqrt(SEEDS);
-
 class Polygon : public sf::Drawable, public sf::Transformable
 {
 public:
@@ -210,38 +208,23 @@ void initEdgePointsVis(bl::HalfEdgePtr h, std::vector<double> &x, std::vector<do
 	}
 }
 
+void deleteTree(bl::BLNodePtr& node)
+{
+	if (node == NULL)
+		return;
+
+	/* first delete both subtrees */
+	deleteTree(node->left);
+	deleteTree(node->right);
+
+	/* then delete the node */
+	delete node;
+}
+
+
 void runFortunes(std::vector<Point2D>& points)
 {
-	auto start = std::chrono::system_clock::now();
-	std::vector<bl::HalfEdgePtr> halfedges, faces;
-	std::vector<bl::VertexPtr> vertices;
-	build_voronoi(points, halfedges, vertices, faces);
 
-	auto end = std::chrono::system_clock::now();
-	auto elapsed_seconds = end - start;
-	perfData[perfDataIndex].FortunesTime += elapsed_seconds.count();
-
-	/*for (size_t i = 0; i < halfedges.size(); ++i) {
-		bl::HalfEdgePtr h = halfedges[i];
-
-		std::vector<double> x(2, 0.0), y(2, 0.0);
-		initEdgePointsVis(h, x, y, points);
-	}*/
-	for (auto& vertex : vertices)
-	{
-		vertex.reset();
-	}
-	vertices.clear();
-	for (auto& hEdge : halfedges)
-	{
-		hEdge.reset();
-	}
-	halfedges.clear();
-	for (auto& face : faces)
-	{
-		face.reset();
-	}
-	faces.clear();
 }
 int main()
 {
@@ -262,7 +245,7 @@ int main()
 			{
 				float x = float(rand() % MAXSIZE + MINSIZE);
 				float y = float(rand() % MAXSIZE + MINSIZE);
-				//BWpoints.push_back(DBG_NEW HALF_EDGE::HE_Vertex(x, y, i));
+				BWpoints.push_back(DBG_NEW HALF_EDGE::HE_Vertex(x, y, i));
 
 				points.push_back(Point2D(x, y));
 			}
@@ -357,9 +340,45 @@ int main()
 			/////////FORTUNES ALGORITHM///////////////////
 			//std::cout << "FORTUNES ALGORITHM\n";
 			{
-				runFortunes(points);
-				
+				std::vector<bl::HalfEdgePtr> halfedges, faces;
+				std::vector<bl::VertexPtr> vertices;
+				std::vector<EventPtr> events;
+				bl::BLNodePtr root = nullptr;
+
+				start = std::chrono::system_clock::now();
+
+				build_voronoi(points, halfedges, vertices, faces, root, events);
+
+				end = std::chrono::system_clock::now();
+				elapsed_seconds = end - start;
+				perfData[perfDataIndex].FortunesTime += elapsed_seconds.count();
 				//std::cout << "elapsed time: " << elapsed_seconds.count() << "s\n";
+				/*for (size_t i = 0; i < halfedges.size(); ++i) {
+					bl::HalfEdgePtr h = halfedges[i];
+
+					std::vector<double> x(2, 0.0), y(2, 0.0);
+					initEdgePointsVis(h, x, y, points);
+				}*/
+				for (int k = 0; k < vertices.size(); k++)
+				{
+					delete vertices[k];
+				}
+				for (int k = 0; k < halfedges.size(); k++)
+				{
+					delete halfedges[k];
+
+				}
+				for (int k = 0; k < events.size(); k++)
+				{
+					delete events[k];
+				}
+				events.clear();
+				halfedges.clear();
+				faces.clear();
+				vertices.clear();
+				deleteTree(root);
+				root = nullptr;
+			
 			}
 			/////////////////////////////////////////////
 
@@ -464,7 +483,7 @@ int main()
 
 			end = std::chrono::system_clock::now();
 			//std::cout << "\nTRIANGULATION & VORONOI GENERATION\n";
-			elapsed_seconds = end - start + elapsed_seconds;
+			elapsed_seconds = end - start;
 			perfData[perfDataIndex].TriToVoronoi += elapsed_seconds.count();
 			//std::cout << "elapsed time: " << elapsed_seconds.count() << "s\n";
 
@@ -798,7 +817,7 @@ int main()
 			}
 			allVoronoiEdges.clear();
 			
-
+			
 
 			if (RENDERING)
 				break;
@@ -817,6 +836,9 @@ int main()
 		perfData[perfDataIndex].Seeds = SEEDS;
 		SEEDS += SEEDINCREMENT;
 
+		std::cout << "Fortune elapsed time: " << perfData[perfDataIndex].FortunesTime << "s\n";
+		std::cout << "Bowyer elapsed time: " << perfData[perfDataIndex].BowyerTriangulation << "s\n";
+		std::cout << "TriToVoronoi elapsed time: " << perfData[perfDataIndex].TriToVoronoi << "s\n";
 		perfDataIndex++;
 		if (RENDERING)
 			break;

@@ -61,16 +61,6 @@ std::vector<double> get_coordinate(const std::vector<bl::VertexPtr> &points, int
 }
 
 
-void plot_circle(const Point2D &c, double r) {
-    std::vector<double> x, y;
-    for (double t = 0.0; t < 2 * M_PI + 0.05; t += 0.05) {
-        x.push_back(sin(t) * r + c.x);
-        y.push_back(cos(t) * r + c.y);
-    }
-    plt::plot(x, y, "m-");
-}
-
-
 std::vector<Point2D> readPoints(const std::string &fileName, int step=1) {
     
     std::vector<Point2D> points;
@@ -165,43 +155,77 @@ void initEdgePointsVis(bl::HalfEdgePtr h, std::vector<double> &x, std::vector<do
     }
 }
 
+void deleteTree(bl::BLNodePtr& node)
+{
+	if (node == NULL) 
+		return;
 
-int main(int argc, const char *argv[]) {
+	/* first delete both subtrees */
+	deleteTree(node->left);
+	deleteTree(node->right);
+
+	/* then delete the node */
+	/*if (node->circle_event != NULL)
+	{
+		node->circle_event->arc.reset();
+
+	}*/
+	delete node;
+}
+
+int main() {
     
     // Generate random points
-    std::vector<Point2D> points = randomPoint(100);
+   
+	for (int i = 0; i < 1000; i++)
+	{
+	std::vector<Point2D> points = randomPoint(100);
     //std::vector<Point2D> points = readPoints("/Users/dkotsur/Projects/KNU/FortuneAlgo/Data/fail_1.txt");
     
     std::vector<bl::HalfEdgePtr> halfedges, faces;
     std::vector<bl::VertexPtr> vertices;
-    
-    for(size_t i = 0; i < points.size(); ++i) {
-        std::vector<double> _x, _y;
-        _x.push_back(points[i].x); _y.push_back(points[i].y);
-        plt::named_plot(std::to_string(i), _x, _y, ".");
-    }
-    
+	std::vector<EventPtr> events;
+	bl::BLNodePtr root = nullptr;
     // Construct Voronoi diagram
-    build_voronoi(points, halfedges, vertices, faces);
-    
-    for (size_t i = 0; i < halfedges.size(); ++i) {
-        bl::HalfEdgePtr h = halfedges[i];
-        
-        std::vector<double> x(2, 0.0), y(2, 0.0);
-        initEdgePointsVis(h, x, y, points);
-        
-        plt::plot(x, y, "lightgray");
-    }
+    build_voronoi(points, halfedges, vertices, faces, root, events);
+
+		for (int k = 0; k < vertices.size(); k++)
+		{
+			delete vertices[k];
+		}
+		for (int k = 0; k < halfedges.size(); k++)
+		{
+			delete halfedges[k];
+			/*halfedges[k]->next.reset();
+			halfedges[k]->prev.reset();
+			halfedges[k]->twin.reset();
+			halfedges[k]->vertex.reset();
+			halfedges[k].reset();*/
+		}
+		/*for (int k = 0; k < faces.size(); k++)
+		{
+			faces[k]->next.reset();
+			faces[k]->prev.reset();
+			faces[k]->twin.reset();
+			faces[k]->vertex.reset();
+			faces[k].reset();
+		}*/
+		for (int k = 0; k < events.size(); k++)
+		{
+			delete events[k];
+		}
+		events.clear();
+	points.clear();
+	halfedges.clear();
+	faces.clear();
+	vertices.clear();
+
+	deleteTree(root);
+
+	}
     
     // Check if iterator works fine
-    for (size_t i = 0; i < halfedges.size(); ++i) {
-        bl::HalfEdgePtr h = halfedges[i];
-        do {
-            assert(halfedges[i]->l_index == h->l_index);
-            h = h->next;
-        } while (h != nullptr && h != halfedges[i]);
-    }
-    
+
     /**
      Iterate around the vertex CCW
      */
@@ -229,11 +253,9 @@ int main(int argc, const char *argv[]) {
 //        } while (he != nullptr && he != he_end);
 //    }
     
-    plt::axis("equal");
     //plt::xlim(-0.5, 1.5);
     //plt::ylim(-0.5, 1.5);
-    plt::show();
-    
+	_CrtDumpMemoryLeaks();
     return 0;
 }
 

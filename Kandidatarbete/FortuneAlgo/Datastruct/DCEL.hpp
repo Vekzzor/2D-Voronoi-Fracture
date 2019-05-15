@@ -11,14 +11,25 @@
 
 #include "../Types/Point2D.h"
 
+#define _CRTDBG_MAP_ALLOC
+#include <crtdbg.h>
+#include <cstdlib>
+
+#ifdef _DEBUG
+#define DBG_NEW new ( _NORMAL_BLOCK , __FILE__ , __LINE__ )
+// Replace _NORMAL_BLOCK with _CLIENT_BLOCK if you want the
+// allocations to be of _CLIENT_BLOCK type
+#else
+#define DBG_NEW new
+#endif
 
 namespace DCEL {
 
     class Vertex;
     class HalfEdge;
     
-    typedef std::shared_ptr<HalfEdge> HalfEdgePtr;
-    typedef std::shared_ptr<Vertex> VertexPtr;
+    typedef HalfEdge* HalfEdgePtr;
+    typedef Vertex* VertexPtr;
 
 
     class Vertex {
@@ -28,10 +39,6 @@ namespace DCEL {
         HalfEdgePtr edge; // The edge points towards this vertex [-->o]
         
         Vertex(const Point2D &pos, HalfEdgePtr incident_edge = nullptr);
-		~Vertex()
-		{
-			edge.reset();
-		}
         inline double x() { return point.x; }
         inline double y() { return point.y; }
 
@@ -49,13 +56,6 @@ namespace DCEL {
         HalfEdgePtr prev;
         
         HalfEdge(int _l_index, int _r_index, VertexPtr _vertex = nullptr);
-		~HalfEdge()
-		{
-			vertex.reset();
-			twin.reset();
-			next.reset();
-			prev.reset();
-		}
         inline VertexPtr vertex0() { return vertex; }
         inline VertexPtr vertex1() { return twin->vertex; }
         inline bool is_finite() {

@@ -30,7 +30,7 @@ namespace beachline {
     using namespace DCEL;
     
     class BLNode;
-    typedef std::shared_ptr<BLNode> BLNodePtr;
+    typedef BLNode* BLNodePtr;
 
     class BLNode {
     public:
@@ -48,11 +48,11 @@ namespace beachline {
         std::pair<int, int> indices;
         
         // Pointers to left, right children and parent node
-        BLNodePtr left, right, parent;
+        BLNodePtr left = nullptr, right = nullptr, parent = nullptr;
         
         // Pointer to a circle event for a leaf node or halfedge for an internal node
-        std::shared_ptr<Event> circle_event;
-        std::shared_ptr<HalfEdge> edge;
+        Event* circle_event = nullptr;
+       HalfEdgePtr edge;
         
         // Constructor
         BLNode(const std::pair<int,int>& _indices,
@@ -64,7 +64,7 @@ namespace beachline {
                int _height = 1);
         
         // Pointers to a next and previous arc-nodes
-        BLNodePtr next, prev;
+        BLNodePtr next = nullptr, prev = nullptr;
         
         // Leaf is defined as <p_i,p_i>
         inline bool is_leaf() {
@@ -90,17 +90,10 @@ namespace beachline {
         //  - in case of leaf node - corresponding focus of parabola;
         //  - in case of internal node - breakpoint;
         double value();
-        
+
 		~BLNode()
 		{
-			points = nullptr;
-			left.reset();
-			right.reset();
-			parent.reset();
-			next.reset();
-			prev.reset();
-			edge.reset();
-			circle_event.reset();
+			
 		}
     };
     
