@@ -28,7 +28,10 @@ namespace DCEL {
         HalfEdgePtr edge; // The edge points towards this vertex [-->o]
         
         Vertex(const Point2D &pos, HalfEdgePtr incident_edge = nullptr);
-        
+		~Vertex()
+		{
+			edge.reset();
+		}
         inline double x() { return point.x; }
         inline double y() { return point.y; }
 
@@ -46,7 +49,13 @@ namespace DCEL {
         HalfEdgePtr prev;
         
         HalfEdge(int _l_index, int _r_index, VertexPtr _vertex = nullptr);
-        
+		~HalfEdge()
+		{
+			vertex.reset();
+			twin.reset();
+			next.reset();
+			prev.reset();
+		}
         inline VertexPtr vertex0() { return vertex; }
         inline VertexPtr vertex1() { return twin->vertex; }
         inline bool is_finite() {

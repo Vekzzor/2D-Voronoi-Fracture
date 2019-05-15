@@ -91,6 +91,17 @@ namespace beachline {
         //  - in case of internal node - breakpoint;
         double value();
         
+		~BLNode()
+		{
+			points = nullptr;
+			left.reset();
+			right.reset();
+			parent.reset();
+			next.reset();
+			prev.reset();
+			edge.reset();
+			circle_event.reset();
+		}
     };
     
     

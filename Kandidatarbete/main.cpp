@@ -1,6 +1,5 @@
 
 #include <SFML/Graphics.hpp>
-#include "voronoi.h"
 #include <iostream>
 #include <fstream>
 #include "Bowyer-Watson/Delunay.h"
@@ -24,8 +23,8 @@
 #define DBG_NEW new
 #endif
 
-#define RENDERING 1
-static const int NR_OF_TESTS = 10;
+#define RENDERING 0
+static const int NR_OF_TESTS = 100;
 static const int NR_OF_REPEATS = 10;
 struct PerformanceData
 {
@@ -37,12 +36,15 @@ struct PerformanceData
 
 static unsigned int perfDataIndex = 0;
 
+using namespace std;
 vector<sf::CircleShape> circumPoints;
-static const int MINSIZE = 3000; //55
-static const int MAXSIZE = 4000; //390
+static const int MINSIZE = 0; //300
+static const int MAXSIZE = 60552; //400
 static const float CENTER = float(MINSIZE + (MAXSIZE / 2));
-static int SEEDS = 100;
-
+static const int SEEDSMAX = 30276;
+static const int SEEDINCREMENT = (SEEDSMAX/ NR_OF_TESTS);
+static int SEEDS = SEEDINCREMENT;
+static int SEEDS_SQRT = sqrt(SEEDS);
 
 class Polygon : public sf::Drawable, public sf::Transformable
 {
@@ -207,99 +209,162 @@ void initEdgePointsVis(bl::HalfEdgePtr h, std::vector<double> &x, std::vector<do
 		y[1] = c.y - norm.y * 1000;
 	}
 }
+
+void runFortunes(std::vector<Point2D>& points)
+{
+	auto start = std::chrono::system_clock::now();
+	std::vector<bl::HalfEdgePtr> halfedges, faces;
+	std::vector<bl::VertexPtr> vertices;
+	build_voronoi(points, halfedges, vertices, faces);
+
+	auto end = std::chrono::system_clock::now();
+	auto elapsed_seconds = end - start;
+	perfData[perfDataIndex].FortunesTime += elapsed_seconds.count();
+
+	/*for (size_t i = 0; i < halfedges.size(); ++i) {
+		bl::HalfEdgePtr h = halfedges[i];
+
+		std::vector<double> x(2, 0.0), y(2, 0.0);
+		initEdgePointsVis(h, x, y, points);
+	}*/
+	for (auto& vertex : vertices)
+	{
+		vertex.reset();
+	}
+	vertices.clear();
+	for (auto& hEdge : halfedges)
+	{
+		hEdge.reset();
+	}
+	halfedges.clear();
+	for (auto& face : faces)
+	{
+		face.reset();
+	}
+	faces.clear();
+}
 int main()
 {
 	//_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 	for (int k = 0; k < NR_OF_TESTS; k++)
 	{
-		for (int i = 0; i < NR_OF_REPEATS; i++)
+		cout << "Test " << k << endl;
+		//INITIALIZATION
+		std::vector<Point2D> points;
+		
+
+		//Create Seed Points
+		vector<HALF_EDGE::HE_Vertex*> BWpoints;
 		{
-			Voronoi* vdg;
-			vector<VoronoiPoint*> ver;
-			vector<VEdge> edges;
-
-			
-
-			std::vector<Point2D> points;
-			std::vector<bl::HalfEdgePtr> halfedges, faces;
-			std::vector<bl::VertexPtr> vertices;
-
-			//INITIALIZATION
-			for (vector<VoronoiPoint*>::iterator i = ver.begin(); i != ver.end(); i++)
-				delete((*i));
-			ver.clear();
-			edges.clear();
-
-
-			//Create Seed Points
-			vector<HALF_EDGE::HE_Vertex*> BWpoints;
+			//RANDOM
+#if 1
+			for (size_t i = 0; i < SEEDS; i++)
 			{
-				for (size_t i = 0; i < SEEDS; i++)
+				float x = float(rand() % MAXSIZE + MINSIZE);
+				float y = float(rand() % MAXSIZE + MINSIZE);
+				//BWpoints.push_back(DBG_NEW HALF_EDGE::HE_Vertex(x, y, i));
+
+				points.push_back(Point2D(x, y));
+			}
+#endif
+
+			//UNIFORM
+
+#if 0
+			for (size_t i = 0; i < SEEDS_SQRT; i++)
+			{
+				for (size_t k = 0; k < SEEDS_SQRT; k++)
 				{
-					float x = float(rand() % MAXSIZE + MINSIZE);
-					float y = float(rand() % MAXSIZE + MINSIZE);
+					int offset = (MAXSIZE + MINSIZE) / SEEDS_SQRT;
+					float x = i * offset;
+					float y = k * offset;
 					BWpoints.push_back(DBG_NEW HALF_EDGE::HE_Vertex(x, y, i));
-					ver.push_back(DBG_NEW VoronoiPoint(x, y));
 
 					points.push_back(Point2D(x, y));
 				}
 
+			}
+#endif
+
+			{
+				float minMax = CENTER;
+				sf::Vector2f starTop = { CENTER, CENTER - minMax };
+				sf::Vector2f starLeft = { CENTER - minMax, CENTER };
+				sf::Vector2f starRight = { CENTER + minMax, CENTER };
+				sf::Vector2f starBottom = { CENTER, CENTER + minMax };
+
+				BWpoints.push_back(DBG_NEW HALF_EDGE::HE_Vertex(MINSIZE, MINSIZE, BWpoints.size()));
+				BWpoints.push_back(DBG_NEW HALF_EDGE::HE_Vertex(MAXSIZE + MINSIZE, MINSIZE, BWpoints.size()));
+				BWpoints.push_back(DBG_NEW HALF_EDGE::HE_Vertex(MAXSIZE + MINSIZE, MAXSIZE + MINSIZE, BWpoints.size()));
+				BWpoints.push_back(DBG_NEW HALF_EDGE::HE_Vertex(MINSIZE, MAXSIZE + MINSIZE, BWpoints.size()));
+
+				BWpoints.push_back(DBG_NEW HALF_EDGE::HE_Vertex(starTop, BWpoints.size()));
+				BWpoints.push_back(DBG_NEW HALF_EDGE::HE_Vertex(starLeft, BWpoints.size()));
+				BWpoints.push_back(DBG_NEW HALF_EDGE::HE_Vertex(starRight, BWpoints.size()));
+				BWpoints.push_back(DBG_NEW HALF_EDGE::HE_Vertex(starBottom, BWpoints.size()));
+
+				points.push_back(Point2D(double(MINSIZE), double(MINSIZE)));
+				points.push_back(Point2D(double(MAXSIZE + MINSIZE), double(MINSIZE)));
+				points.push_back(Point2D(double(MAXSIZE + MINSIZE), double(MAXSIZE + MINSIZE)));
+				points.push_back(Point2D(double(MINSIZE), double(MAXSIZE + MINSIZE)));
+
+				points.push_back(Point2D(starTop.x, starTop.y));
+				points.push_back(Point2D(starLeft.x, starLeft.y));
+				points.push_back(Point2D(starRight.x, starRight.y));
+				points.push_back(Point2D(starBottom.x, starBottom.y));
+			}
+			std::vector<bool> remove(BWpoints.size(), false);
+			for (size_t i = 0; i < BWpoints.size(); i++)
+			{
+				for (size_t k = i; k < BWpoints.size(); k++)
 				{
-					float minMax = CENTER;
-					sf::Vector2f starTop = { CENTER, CENTER - minMax };
-					sf::Vector2f starLeft = { CENTER - minMax, CENTER };
-					sf::Vector2f starRight = { CENTER + minMax, CENTER };
-					sf::Vector2f starBottom = { CENTER, CENTER + minMax };
-
-					BWpoints.push_back(DBG_NEW HALF_EDGE::HE_Vertex(MINSIZE, MINSIZE, BWpoints.size()));
-					BWpoints.push_back(DBG_NEW HALF_EDGE::HE_Vertex(MAXSIZE + MINSIZE, MINSIZE, BWpoints.size()));
-					BWpoints.push_back(DBG_NEW HALF_EDGE::HE_Vertex(MAXSIZE + MINSIZE, MAXSIZE + MINSIZE, BWpoints.size()));
-					BWpoints.push_back(DBG_NEW HALF_EDGE::HE_Vertex(MINSIZE, MAXSIZE + MINSIZE, BWpoints.size()));
-
-					BWpoints.push_back(DBG_NEW HALF_EDGE::HE_Vertex(starTop, BWpoints.size()));
-					BWpoints.push_back(DBG_NEW HALF_EDGE::HE_Vertex(starLeft, BWpoints.size()));
-					BWpoints.push_back(DBG_NEW HALF_EDGE::HE_Vertex(starRight, BWpoints.size()));
-					BWpoints.push_back(DBG_NEW HALF_EDGE::HE_Vertex(starBottom, BWpoints.size()));
-
-
-					ver.push_back(DBG_NEW VoronoiPoint(double(MINSIZE), double(MINSIZE)));
-					ver.push_back(DBG_NEW VoronoiPoint(double(MAXSIZE + MINSIZE), double(MINSIZE)));
-					ver.push_back(DBG_NEW VoronoiPoint(double(MAXSIZE + MINSIZE), double(MAXSIZE + MINSIZE)));
-					ver.push_back(DBG_NEW VoronoiPoint(double(MINSIZE), double(MAXSIZE + MINSIZE)));
-
-					ver.push_back(DBG_NEW VoronoiPoint(starTop.x, starTop.y));
-					ver.push_back(DBG_NEW VoronoiPoint(starLeft.x, starLeft.y));
-					ver.push_back(DBG_NEW VoronoiPoint(starRight.x, starRight.y));
-					ver.push_back(DBG_NEW VoronoiPoint(starBottom.x, starBottom.y));
-
-					points.push_back(Point2D(double(MINSIZE), double(MINSIZE)));
-					points.push_back(Point2D(double(MAXSIZE + MINSIZE), double(MINSIZE)));
-					points.push_back(Point2D(double(MAXSIZE + MINSIZE), double(MAXSIZE + MINSIZE)));
-					points.push_back(Point2D(double(MINSIZE), double(MAXSIZE + MINSIZE)));
-
-					points.push_back(Point2D(starTop.x, starTop.y));
-					points.push_back(Point2D(starLeft.x, starLeft.y));
-					points.push_back(Point2D(starRight.x, starRight.y));
-					points.push_back(Point2D(starBottom.x, starBottom.y));
+					if (i == k) {
+						continue;
+					}
+					if (*BWpoints[i] == *BWpoints[k])
+					{
+						remove[k] = true;
+					}
 				}
 			}
+			auto is_duplicate = [&](auto const& e) { return remove[&e - &BWpoints[0]]; };
+			erase_where(BWpoints, is_duplicate);
+			remove.clear();
+			remove = std::vector<bool>(points.size(), false);
+			for (size_t i = 0; i < points.size(); i++)
+			{
+				for (size_t k = i; k < points.size(); k++)
+				{
+					if (i == k) {
+						continue;
+					}
+					if (points[i].x == points[k].x && points[i].y == points[k].y)
+					{
+						remove[k] = true;
+					}
+				}
+			}
+			auto is_duplicate2 = [&](auto const& e) { return remove[&e - &points[0]]; };
+			erase_where(points, is_duplicate2);
 
+		}
+
+		for (int i = 0; i < NR_OF_REPEATS; i++)
+		{
+			std::chrono::system_clock::time_point start;
+			std::chrono::system_clock::time_point end;
+			std::chrono::duration<double> elapsed_seconds;
 			/////////FORTUNES ALGORITHM///////////////////
-			//vdg = DBG_NEW Voronoi();
-			std::cout << "FORTUNES ALGORITHM\n";
-			auto start = std::chrono::system_clock::now();
-			build_voronoi(points, halfedges, vertices, faces);
-			//edges = vdg->ComputeVoronoiGraph(ver, MINSIZE, MINSIZE + MAXSIZE);
-
-			auto end = std::chrono::system_clock::now();
-			std::chrono::duration<double> elapsed_seconds = end - start;
-			perfData[perfDataIndex].FortunesTime += elapsed_seconds.count();
-			std::cout << "elapsed time: " << elapsed_seconds.count() << "s\n";
-			//delete vdg;
+			//std::cout << "FORTUNES ALGORITHM\n";
+			{
+				runFortunes(points);
+				
+				//std::cout << "elapsed time: " << elapsed_seconds.count() << "s\n";
+			}
 			/////////////////////////////////////////////
 
 			////BOWYER-WATSON TRIANGULATION ALGORITHM////
-			std::cout << "\nBOWYER-WATSON TRIANGULATION ALGORITHM\n";
+			//std::cout << "\nBOWYER-WATSON TRIANGULATION ALGORITHM\n";
 			Delunay triangulation;
 
 			start = std::chrono::system_clock::now();
@@ -398,10 +463,10 @@ int main()
 			}
 
 			end = std::chrono::system_clock::now();
-			std::cout << "\nTRIANGULATION & VORONOI GENERATION\n";
+			//std::cout << "\nTRIANGULATION & VORONOI GENERATION\n";
 			elapsed_seconds = end - start + elapsed_seconds;
 			perfData[perfDataIndex].TriToVoronoi += elapsed_seconds.count();
-			std::cout << "elapsed time: " << elapsed_seconds.count() << "s\n";
+			//std::cout << "elapsed time: " << elapsed_seconds.count() << "s\n";
 
 			std::vector<VoronoiCell> voronoiCells;
 			voronoiCells.reserve(BWpoints.size());
@@ -716,16 +781,7 @@ int main()
 				delete line;
 			}
 #endif
-			for (auto &point : BWpoints)
-			{
-				delete point;
-			}
-			BWpoints.clear();
-			for (auto &point : ver)
-			{
-				delete point;
-			}
-			ver.clear();
+			
 			for (auto &face : faceList)
 			{
 				delete face;
@@ -741,16 +797,25 @@ int main()
 				delete edge;
 			}
 			allVoronoiEdges.clear();
-			edges.clear();
+			
+
+
 			if (RENDERING)
 				break;
 		}
+
+		for (auto &point : BWpoints)
+		{
+			delete point;
+		}
+		BWpoints.clear();
+		points.clear();
 
 		perfData[perfDataIndex].FortunesTime /= NR_OF_REPEATS;
 		perfData[perfDataIndex].BowyerTriangulation /= NR_OF_REPEATS;
 		perfData[perfDataIndex].TriToVoronoi /= NR_OF_REPEATS;
 		perfData[perfDataIndex].Seeds = SEEDS;
-		SEEDS += 20;
+		SEEDS += SEEDINCREMENT;
 
 		perfDataIndex++;
 		if (RENDERING)
@@ -1084,3 +1149,4 @@ void WriteToFile()
 	}
 	myfile.close();
 }
+

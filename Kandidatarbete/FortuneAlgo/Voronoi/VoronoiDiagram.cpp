@@ -42,7 +42,11 @@ struct Event {
     
     
     Event(int _index = -1, int _type = Event::SKIP, const Point2D &_point = Point2D(0.0, 0.0)) :
-    index(_index), type(_type), point(_point), arc(nullptr) {}
+	index(_index), type(_type), point(_point), arc(nullptr) {}
+	~Event()
+	{
+		arc.reset();
+	};
     
 };
 

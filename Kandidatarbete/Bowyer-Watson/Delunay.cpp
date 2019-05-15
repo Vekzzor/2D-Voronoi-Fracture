@@ -92,6 +92,10 @@ std::vector<Triangle>& Delunay::Triangulate(std::vector<HALF_EDGE::HE_Vertex*>& 
 			//		}
 			//	}
 			//}
+			if (pointIndex == 29000)
+			{
+				//_triangles[0].lul = pointIndex;
+			}
 
 			for (auto it1 = edges.begin(); it1 != edges.end(); ++it1) {
 				for (auto it2 = edges.begin(); it2 != edges.end(); ++it2) {
@@ -112,6 +116,7 @@ std::vector<Triangle>& Delunay::Triangulate(std::vector<HALF_EDGE::HE_Vertex*>& 
 			{
 				_triangles.push_back(Triangle(e.v1, e.v2, pt));
 			}
+			pointIndex++;
 #if 0
 			sf::Event event;
 			while (timer < 3)

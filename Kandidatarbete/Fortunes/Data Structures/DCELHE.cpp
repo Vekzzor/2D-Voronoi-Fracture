@@ -25,6 +25,11 @@ sf::Vector2f HE_Vertex::getCoordinates()
 	return sf::Vector2f(*point);
 }
 
+bool HALF_EDGE::HE_Vertex::operator==(const HE_Vertex & other) const
+{
+	return (*other.point == *point);
+}
+
 
 HE_Face::HE_Face() {};
 

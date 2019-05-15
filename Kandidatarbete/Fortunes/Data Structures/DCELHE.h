@@ -13,7 +13,7 @@ namespace HALF_EDGE
 		HE_Vertex(sf::Vector2f vector, int index = -1);
 		~HE_Vertex();
 		sf::Vector2f getCoordinates();
-		
+		bool operator==(const HE_Vertex &other)const;
 		HE_Edge *edge = nullptr;  /* rep->tail == this */
 		sf::Vector2f* point = nullptr;
 		int arrayIndex = -1;

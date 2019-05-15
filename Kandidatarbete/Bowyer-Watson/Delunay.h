@@ -62,6 +62,7 @@ public:
 	HALF_EDGE::HE_Vertex* v3;
 	DCircle circle;
 	bool isBad = false;
+	int lul = 0;
 	Triangle(HALF_EDGE::HE_Vertex* _v1, HALF_EDGE::HE_Vertex* _v2, HALF_EDGE::HE_Vertex* _v3)
 	  : v1{ _v1 },
 		v2{ _v2 },
