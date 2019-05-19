@@ -331,6 +331,7 @@ namespace beachline {
         connect(leaf->prev, leaf->next);
         
         //_check_balance(new_root);
+		delete leaf->parent;
 		delete leaf;
         return new_root;
     }

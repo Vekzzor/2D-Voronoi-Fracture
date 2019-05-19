@@ -1,2 +1,2 @@
 Index	Seeds	Fortune	Bowyer-Watson	Triangulation to Voronoi	Bowyer-Watson to Voronoi	Nr of tests	1
-0	30276	0.329607	2.937e-05	4.16e-05	7.097e-05	
+0	2520	0.0110226	0.0323575	0.021027	0.0533845	

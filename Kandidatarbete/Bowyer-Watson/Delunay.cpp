@@ -47,7 +47,6 @@ std::vector<Triangle>& Delunay::Triangulate(std::vector<HALF_EDGE::HE_Vertex*>& 
 
 		_triangles.push_back({ p1, p2, p3 });
 
-		int pointIndex = 0;
 		double circumCheckTime = 0;
 		double dublicateEdgesTime = 0;
 		double triangleCreationTime = 0;
@@ -92,10 +91,6 @@ std::vector<Triangle>& Delunay::Triangulate(std::vector<HALF_EDGE::HE_Vertex*>& 
 			//		}
 			//	}
 			//}
-			if (pointIndex == 29000)
-			{
-				//_triangles[0].lul = pointIndex;
-			}
 
 			for (auto it1 = edges.begin(); it1 != edges.end(); ++it1) {
 				for (auto it2 = edges.begin(); it2 != edges.end(); ++it2) {
@@ -116,7 +111,6 @@ std::vector<Triangle>& Delunay::Triangulate(std::vector<HALF_EDGE::HE_Vertex*>& 
 			{
 				_triangles.push_back(Triangle(e.v1, e.v2, pt));
 			}
-			pointIndex++;
 #if 0
 			sf::Event event;
 			while (timer < 3)
@@ -195,10 +189,6 @@ std::vector<Triangle>& Delunay::Triangulate(std::vector<HALF_EDGE::HE_Vertex*>& 
 #endif
 		}
 
-	/*	std::cout << circumCheckTime << std::endl;
-		std::cout << dublicateEdgesTime << std::endl;
-		std::cout << triangleCreationTime << std::endl;
-		system("pause");*/
 		auto is_part_STriangle = [&](Triangle const& tri) {
 			return (tri.v1->arrayIndex == -1 || tri.v2->arrayIndex == -1 || tri.v3->arrayIndex == -1); };
 

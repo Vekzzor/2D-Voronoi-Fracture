@@ -7,7 +7,7 @@
 #include <math.h> 
 #include <chrono>
 #include <crtdbg.h>
-
+#include <queue>
 #include "FortuneAlgo/Types/Point2D.h"
 #include "FortuneAlgo/Voronoi/VoronoiDiagram.hpp"
 #include "FortuneAlgo/Datastruct/Beachline.hpp"
@@ -23,9 +23,10 @@
 #define DBG_NEW new
 #endif
 
-#define RENDERING 0
-static const int NR_OF_TESTS = 40;
-static const int NR_OF_REPEATS = 10;
+#define POLYCLIP 1
+#define RENDERING 1
+static const int NR_OF_TESTS = 100;
+static const int NR_OF_REPEATS = 100;
 struct PerformanceData
 {
 	unsigned int Seeds = 0;
@@ -39,17 +40,24 @@ static unsigned int perfDataIndex = 0;
 using namespace std;
 vector<sf::CircleShape> circumPoints;
 static const int MINSIZE = 0; //300
-static const int MAXSIZE = 60552; //400
+static const int MAXSIZE = 15000; //400
 static const float CENTER = float(MINSIZE + (MAXSIZE / 2));
-static const int SEEDSMAX = 30276;
+static const int SEEDSMAX = 8;
 static const int SEEDINCREMENT = (SEEDSMAX/ NR_OF_TESTS);
-static int SEEDS = SEEDINCREMENT;
+static const sf::Vector2f GRAPHSPACING(0, 0);
+static bool renderVoronoiSites = true;
+#if RENDERING
+	static int SEEDS = SEEDSMAX;
+#else
+	static int SEEDS = SEEDINCREMENT;
+#endif
 class Polygon : public sf::Drawable, public sf::Transformable
 {
 public:
 	Polygon()
 	{
-		m_center.setRadius(3);
+		m_center.setRadius(20);
+		m_center.setFillColor(sf::Color(0, 0, 0));
 	}
 	void addTexture(sf::Texture texture)
 	{
@@ -58,6 +66,8 @@ public:
 	std::vector<sf::Vertex> m_vertices;
 	sf::CircleShape m_center;
 	sf::PrimitiveType m_type = sf::Triangles;
+	bool renderPoly = true;
+	bool renderSite = true;
 private:
 	virtual void draw(sf::RenderTarget& target, sf::RenderStates states) const
 	{
@@ -69,9 +79,10 @@ private:
 
 		// you may also override states.shader or states.blendMode if you want
 		// draw the vertex array
-		target.draw(m_vertices.data(), m_vertices.size(), m_type, states);
-
-		//target.draw(m_center,states);
+		if(renderPoly)
+			target.draw(m_vertices.data(), m_vertices.size(), m_type, states);
+		if(renderSite)
+			target.draw(m_center,states);
 		//target.draw(&m_site, 1, sf::Points, states);
 	}
 	sf::Transform m_transformation;
@@ -208,200 +219,187 @@ void initEdgePointsVis(bl::HalfEdgePtr h, std::vector<double> &x, std::vector<do
 	}
 }
 
-void deleteTree(bl::BLNodePtr& node)
+void deleteTree(bl::BLNodePtr& root)
 {
-	if (node == NULL)
+	//if (node == NULL)
+	//	return;
+
+	///* first delete both subtrees */
+	//deleteTree(node->left);
+	//deleteTree(node->right);
+
+	///* then delete the node */
+	//delete node;
+
+
+	// Base Case 
+	if (root == NULL)
 		return;
 
-	/* first delete both subtrees */
-	deleteTree(node->left);
-	deleteTree(node->right);
+	// Create an empty queue for level order traversal 
+	queue<bl::BLNodePtr> q;
 
-	/* then delete the node */
-	delete node;
+	// Do level order traversal starting from root 
+	q.push(root);
+	while (!q.empty())
+	{
+		bl::BLNodePtr node = q.front();
+		q.pop();
+
+		if (node->left != NULL)
+			q.push(node->left);
+		if (node->right != NULL)
+			q.push(node->right);
+
+		delete node;
+	}
+	root = nullptr;
 }
 
-
-void runFortunes(std::vector<Point2D>& points)
+void CreateSeedPoints(std::vector<Point2D>& FortunePoints, vector<HALF_EDGE::HE_Vertex*>& BWpoints)
 {
+	for (size_t i = 0; i < SEEDS; i++)
+	{
+		float x = float(rand() % MAXSIZE + MINSIZE);
+		float y = float(rand() % MAXSIZE + MINSIZE);
+		BWpoints.push_back(DBG_NEW HALF_EDGE::HE_Vertex(x, y, i));
 
+		FortunePoints.push_back(Point2D(x, y));
+	}
+
+	{
+		float minMax = MAXSIZE*2;
+		sf::Vector2f starTop = { CENTER, CENTER - minMax };
+		sf::Vector2f starLeft = { CENTER - minMax, CENTER };
+		sf::Vector2f starRight = { CENTER + minMax, CENTER };
+		sf::Vector2f starBottom = { CENTER, CENTER + minMax };
+
+		BWpoints.push_back(DBG_NEW HALF_EDGE::HE_Vertex(MINSIZE, MINSIZE, BWpoints.size()));
+		BWpoints.push_back(DBG_NEW HALF_EDGE::HE_Vertex(MAXSIZE + MINSIZE, MINSIZE, BWpoints.size()));
+		BWpoints.push_back(DBG_NEW HALF_EDGE::HE_Vertex(MAXSIZE + MINSIZE, MAXSIZE + MINSIZE, BWpoints.size()));
+		BWpoints.push_back(DBG_NEW HALF_EDGE::HE_Vertex(MINSIZE, MAXSIZE + MINSIZE, BWpoints.size()));
+
+		BWpoints.push_back(DBG_NEW HALF_EDGE::HE_Vertex(starTop, BWpoints.size()));
+		BWpoints.push_back(DBG_NEW HALF_EDGE::HE_Vertex(starLeft, BWpoints.size()));
+		BWpoints.push_back(DBG_NEW HALF_EDGE::HE_Vertex(starRight, BWpoints.size()));
+		BWpoints.push_back(DBG_NEW HALF_EDGE::HE_Vertex(starBottom, BWpoints.size()));
+
+		FortunePoints.push_back(Point2D(double(MINSIZE), double(MINSIZE)));
+		FortunePoints.push_back(Point2D(double(MAXSIZE + MINSIZE), double(MINSIZE)));
+		FortunePoints.push_back(Point2D(double(MAXSIZE + MINSIZE), double(MAXSIZE + MINSIZE)));
+		FortunePoints.push_back(Point2D(double(MINSIZE), double(MAXSIZE + MINSIZE)));
+		
+		FortunePoints.push_back(Point2D(starTop.x, starTop.y));
+		FortunePoints.push_back(Point2D(starLeft.x, starLeft.y));
+		FortunePoints.push_back(Point2D(starRight.x, starRight.y));
+		FortunePoints.push_back(Point2D(starBottom.x, starBottom.y));
+	}
+	//Remove Dublicate Points
+#if 0
+	std::vector<bool> remove(BWpoints.size(), false);
+	{
+		for (size_t i = 0; i < BWpoints.size(); i++)
+		{
+			for (size_t k = i; k < BWpoints.size(); k++)
+			{
+				if (i == k) {
+					continue;
+				}
+				if (*BWpoints[i] == *BWpoints[k])
+				{
+					remove[k] = true;
+				}
+			}
+		}
+		auto is_duplicate = [&](HALF_EDGE::HE_Vertex* const& e) { return remove[&e - &BWpoints[0]]; };
+		erase_where(BWpoints, is_duplicate);
+		remove.clear();
+	}
+
+
+	{
+		remove = std::vector<bool>(FortunePoints.size(), false);
+		for (size_t i = 0; i < FortunePoints.size(); i++)
+		{
+			for (size_t k = i; k < FortunePoints.size(); k++)
+			{
+				if (i == k) {
+					continue;
+				}
+				if (FortunePoints[i].x == FortunePoints[k].x && FortunePoints[i].y == FortunePoints[k].y)
+				{
+					remove[k] = true;
+				}
+			}
+		}
+		auto is_duplicate2 = [&](Point2D const& e) { return remove[&e - &FortunePoints[0]]; };
+		erase_where(FortunePoints, is_duplicate2);
+	}
+#endif
 }
+
+void runFortunes(std::vector<Point2D>& points, std::vector<bl::HalfEdgePtr>& halfedges, std::vector<bl::HalfEdgePtr>&faces,
+std::vector<bl::VertexPtr>& vertices)
+{
+	std::vector<EventPtr> events;
+	bl::BLNodePtr root = nullptr;
+	build_voronoi(points, halfedges, vertices, faces, root, events);
+
+	for (int k = 0; k < events.size(); k++)
+	{
+		delete events[k];
+	}
+	events.clear();
+	deleteTree(root);
+}
+
 int main()
 {
-	//_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 	for (int k = 0; k < NR_OF_TESTS; k++)
 	{
 		cout << "Test " << k << endl;
-		//INITIALIZATION
-		std::vector<Point2D> points;
-		
-
 		//Create Seed Points
+		std::vector<Point2D> points;
 		vector<HALF_EDGE::HE_Vertex*> BWpoints;
-		{
-			//RANDOM
-#if 1
-			for (size_t i = 0; i < SEEDS; i++)
-			{
-				float x = float(rand() % MAXSIZE + MINSIZE);
-				float y = float(rand() % MAXSIZE + MINSIZE);
-				BWpoints.push_back(DBG_NEW HALF_EDGE::HE_Vertex(x, y, i));
-
-				points.push_back(Point2D(x, y));
-			}
-#endif
-
-			//UNIFORM
-
-#if 0
-			for (size_t i = 0; i < SEEDS_SQRT; i++)
-			{
-				for (size_t k = 0; k < SEEDS_SQRT; k++)
-				{
-					int offset = (MAXSIZE + MINSIZE) / SEEDS_SQRT;
-					float x = i * offset;
-					float y = k * offset;
-					BWpoints.push_back(DBG_NEW HALF_EDGE::HE_Vertex(x, y, i));
-
-					points.push_back(Point2D(x, y));
-				}
-
-			}
-#endif
-
-			{
-				float minMax = CENTER;
-				sf::Vector2f starTop = { CENTER, CENTER - minMax };
-				sf::Vector2f starLeft = { CENTER - minMax, CENTER };
-				sf::Vector2f starRight = { CENTER + minMax, CENTER };
-				sf::Vector2f starBottom = { CENTER, CENTER + minMax };
-
-				BWpoints.push_back(DBG_NEW HALF_EDGE::HE_Vertex(MINSIZE, MINSIZE, BWpoints.size()));
-				BWpoints.push_back(DBG_NEW HALF_EDGE::HE_Vertex(MAXSIZE + MINSIZE, MINSIZE, BWpoints.size()));
-				BWpoints.push_back(DBG_NEW HALF_EDGE::HE_Vertex(MAXSIZE + MINSIZE, MAXSIZE + MINSIZE, BWpoints.size()));
-				BWpoints.push_back(DBG_NEW HALF_EDGE::HE_Vertex(MINSIZE, MAXSIZE + MINSIZE, BWpoints.size()));
-
-				BWpoints.push_back(DBG_NEW HALF_EDGE::HE_Vertex(starTop, BWpoints.size()));
-				BWpoints.push_back(DBG_NEW HALF_EDGE::HE_Vertex(starLeft, BWpoints.size()));
-				BWpoints.push_back(DBG_NEW HALF_EDGE::HE_Vertex(starRight, BWpoints.size()));
-				BWpoints.push_back(DBG_NEW HALF_EDGE::HE_Vertex(starBottom, BWpoints.size()));
-
-				points.push_back(Point2D(double(MINSIZE), double(MINSIZE)));
-				points.push_back(Point2D(double(MAXSIZE + MINSIZE), double(MINSIZE)));
-				points.push_back(Point2D(double(MAXSIZE + MINSIZE), double(MAXSIZE + MINSIZE)));
-				points.push_back(Point2D(double(MINSIZE), double(MAXSIZE + MINSIZE)));
-
-				points.push_back(Point2D(starTop.x, starTop.y));
-				points.push_back(Point2D(starLeft.x, starLeft.y));
-				points.push_back(Point2D(starRight.x, starRight.y));
-				points.push_back(Point2D(starBottom.x, starBottom.y));
-			}
-			std::vector<bool> remove(BWpoints.size(), false);
-			for (size_t i = 0; i < BWpoints.size(); i++)
-			{
-				for (size_t k = i; k < BWpoints.size(); k++)
-				{
-					if (i == k) {
-						continue;
-					}
-					if (*BWpoints[i] == *BWpoints[k])
-					{
-						remove[k] = true;
-					}
-				}
-			}
-			auto is_duplicate = [&](auto const& e) { return remove[&e - &BWpoints[0]]; };
-			erase_where(BWpoints, is_duplicate);
-			remove.clear();
-			remove = std::vector<bool>(points.size(), false);
-			for (size_t i = 0; i < points.size(); i++)
-			{
-				for (size_t k = i; k < points.size(); k++)
-				{
-					if (i == k) {
-						continue;
-					}
-					if (points[i].x == points[k].x && points[i].y == points[k].y)
-					{
-						remove[k] = true;
-					}
-				}
-			}
-			auto is_duplicate2 = [&](auto const& e) { return remove[&e - &points[0]]; };
-			erase_where(points, is_duplicate2);
-
-		}
-
+		CreateSeedPoints(points, BWpoints);
+		cout << "BWPoints Size: " << BWpoints.size() << endl;
+		
 		for (int i = 0; i < NR_OF_REPEATS; i++)
 		{
+			std::vector<bl::HalfEdgePtr> halfedges, faces;
+			std::vector<bl::VertexPtr> vertices;
+
 			std::chrono::system_clock::time_point start;
 			std::chrono::system_clock::time_point end;
 			std::chrono::duration<double> elapsed_seconds;
 			/////////FORTUNES ALGORITHM///////////////////
-			//std::cout << "FORTUNES ALGORITHM\n";
 			{
-				std::vector<bl::HalfEdgePtr> halfedges, faces;
-				std::vector<bl::VertexPtr> vertices;
-				std::vector<EventPtr> events;
-				bl::BLNodePtr root = nullptr;
-
 				start = std::chrono::system_clock::now();
-
-				build_voronoi(points, halfedges, vertices, faces, root, events);
-
+				runFortunes(points, halfedges, faces, vertices);
 				end = std::chrono::system_clock::now();
 				elapsed_seconds = end - start;
 				perfData[perfDataIndex].FortunesTime += elapsed_seconds.count();
-				//std::cout << "elapsed time: " << elapsed_seconds.count() << "s\n";
-				/*for (size_t i = 0; i < halfedges.size(); ++i) {
-					bl::HalfEdgePtr h = halfedges[i];
-
-					std::vector<double> x(2, 0.0), y(2, 0.0);
-					initEdgePointsVis(h, x, y, points);
-				}*/
-				for (int k = 0; k < vertices.size(); k++)
-				{
-					delete vertices[k];
-				}
-				for (int k = 0; k < halfedges.size(); k++)
-				{
-					delete halfedges[k];
-
-				}
-				for (int k = 0; k < events.size(); k++)
-				{
-					delete events[k];
-				}
-				events.clear();
-				halfedges.clear();
-				faces.clear();
-				vertices.clear();
-				deleteTree(root);
-				root = nullptr;
-			
 			}
 			/////////////////////////////////////////////
-
 			////BOWYER-WATSON TRIANGULATION ALGORITHM////
-			//std::cout << "\nBOWYER-WATSON TRIANGULATION ALGORITHM\n";
 			Delunay triangulation;
 
 			start = std::chrono::system_clock::now();
 			const std::vector<Triangle> triangles = triangulation.Triangulate(BWpoints);
-
 			end = std::chrono::system_clock::now();
 			elapsed_seconds = end - start;
 			perfData[perfDataIndex].BowyerTriangulation += elapsed_seconds.count();
+
 			if (RENDERING)
 			{
 				std::cout << "elapsed time: " << elapsed_seconds.count() << "s\n";
 				std::cout << triangles.size() << " triangles generated\n";
 			}
 			/////////////////////////////////////////////
+
 			start = std::chrono::system_clock::now();
-
 			std::vector<pair<unsigned int, unsigned int>> EdgeIndex;
-
 			for (const Triangle &triangle : triangles)
 			{
 				EdgeIndex.push_back(make_pair(triangle.v1->arrayIndex, triangle.v2->arrayIndex));
@@ -409,6 +407,7 @@ int main()
 				EdgeIndex.push_back(make_pair(triangle.v3->arrayIndex, triangle.v1->arrayIndex));
 			}
 
+			//Generate DCEL structure
 			map< pair<unsigned int, unsigned int>, HALF_EDGE::HE_Edge* > edgeList;
 			std::vector<HALF_EDGE::HE_Face*>						   	 faceList;
 
@@ -447,7 +446,6 @@ int main()
 				}
 				faceList.push_back(tempF);
 			}
-			
 
 #if RENDERING
 			std::vector <HALF_EDGE::HE_Vertex*> faceEdgePoints;
@@ -481,12 +479,6 @@ int main()
 				addVoronoiEdge(e3, voronoiVertex, allVoronoiEdges);
 			}
 
-			end = std::chrono::system_clock::now();
-			//std::cout << "\nTRIANGULATION & VORONOI GENERATION\n";
-			elapsed_seconds = end - start;
-			perfData[perfDataIndex].TriToVoronoi += elapsed_seconds.count();
-			//std::cout << "elapsed time: " << elapsed_seconds.count() << "s\n";
-
 			std::vector<VoronoiCell> voronoiCells;
 			voronoiCells.reserve(BWpoints.size());
 			for (int i = 0; i < allVoronoiEdges.size(); i++)
@@ -505,7 +497,7 @@ int main()
 				}
 
 				int cellPos = index;
-				//No cell was found so we need to create a DBG_NEW cell
+				//No cell was found so we need to create a new cell
 				if (cellPos == -1)
 				{
 					VoronoiCell newCell(e->site);
@@ -520,12 +512,15 @@ int main()
 				}
 			}
 
+			end = std::chrono::system_clock::now();
+			elapsed_seconds = end - start;
+			perfData[perfDataIndex].TriToVoronoi += elapsed_seconds.count();
+
 			//RENDERING
 #if RENDERING
 	//VORONOI CELLS
-	//std::vector<sf::Vertex*> polygons;
 			std::vector<Polygon> polygons;
-			//polygons.resize(voronoiCells.size());
+			polygons.resize(BWpoints.size());
 			vector<sf::CircleShape> seedPoints;
 			for (auto &cell : voronoiCells)
 			{
@@ -536,10 +531,11 @@ int main()
 				int vertCount = 0;
 				for (int i = 0; i < cell.edges.size(); i++)
 				{
-					sf::Vector2f p3 = cell.edges[i]->v1;
-					sf::Vector2f p2 = cell.edges[i]->v2;
+					sf::Vector2f p3(cell.edges[i]->v1);
+					sf::Vector2f p2(cell.edges[i]->v2);
+					sf::Vector2f p1(*cell.site);
 					sf::Vertex test[3];
-					test[0] = *cell.site;
+					test[0] = p1;
 					test[0].color = color;
 					test[1] = p2;
 					test[1].color = color;
@@ -551,7 +547,7 @@ int main()
 					bool draw = true;
 					float halfwidth = float(MAXSIZE / 2) + 1.0f;
 
-#if 1
+#if POLYCLIP
 					if (LiangBarsky(CENTER - halfwidth, CENTER + halfwidth,
 						CENTER + halfwidth, CENTER - halfwidth,
 						test[1].position, test[2].position, v1Result, v2Result))
@@ -566,7 +562,7 @@ int main()
 								test[0].position, test[1].position, v1ResultN, v2ResultN))
 							{
 								sf::Vertex nVertex;
-								nVertex = *cell.site;
+								nVertex = p1;
 								nVertex.color = color;
 								polygon.m_vertices.push_back(nVertex);
 
@@ -594,7 +590,7 @@ int main()
 								test[0].position, test[2].position, v1ResultN, v2ResultN))
 							{
 								sf::Vertex nVertex;
-								nVertex = *cell.site;
+								nVertex = p1;
 								nVertex.color = color;
 								polygon.m_vertices.push_back(nVertex);
 
@@ -653,37 +649,180 @@ int main()
 				}
 				polyCenter.x /= vertCount;
 				polyCenter.y /= vertCount;
-				polygon.m_center.setPosition(polyCenter);
-				polygon.setOrigin(polygon.m_center.getPosition());
-				polygon.setPosition(polygon.m_center.getPosition());
+				polygon.m_center.setPosition(sf::Vector2f(cell.site->x, cell.site->y)- sf::Vector2f(polygon.m_center.getRadius(), polygon.m_center.getRadius()));
+				polygon.setOrigin(polyCenter);
+				polygon.setPosition(polyCenter - GRAPHSPACING);
 
 				polygons.push_back(polygon);
 			}
 
+			std::vector<Polygon> polygonsF;
+			polygonsF.resize(points.size());
+			for (auto &site : faces)
+			{
+				sf::Color color(rand() % 200, rand() % 200, rand() % 200);
+
+				Polygon polygon;
+				sf::Vector2f polyCenter;
+				int vertCount = 0;
+
+				DCEL::HalfEdgePtr start_Edge = site;
+				DCEL::HalfEdgePtr half_edge = start_Edge;
+				do
+				{
+					if (!half_edge->is_finite())
+						break;
+					//Collect vertex;
+					sf::Vector2f p3(half_edge->vertex->x(), half_edge->vertex->y());
+					sf::Vector2f p2(half_edge->twin->vertex->x(), half_edge->twin->vertex->y());
+					sf::Vector2f p1(points[site->l_index].x, points[site->l_index].y);
+					sf::Vertex test[3];
+					test[0] = p1;
+					test[0].color = color;
+					test[1] = p2;
+					test[1].color = color;
+					test[2] = p3;
+					test[2].color = color;
+					sf::Vector2f v1Result;
+					sf::Vector2f v2Result;
+					bool draw = true;
+					float halfwidth = float(MAXSIZE / 2) + 1.0f;
+
+#if POLYCLIP
+					if (LiangBarsky(CENTER - halfwidth, CENTER + halfwidth,
+						CENTER + halfwidth, CENTER - halfwidth,
+						test[1].position, test[2].position, v1Result, v2Result))
+					{
+
+						if (v1Result != test[1].position)
+						{
+							sf::Vector2f v1ResultN;
+							sf::Vector2f v2ResultN;
+							if (LiangBarsky(CENTER - halfwidth, CENTER + halfwidth,
+								CENTER + halfwidth, CENTER - halfwidth,
+								test[0].position, test[1].position, v1ResultN, v2ResultN))
+							{
+								sf::Vertex nVertex;
+								nVertex = p1;
+								nVertex.color = color;
+								polygon.m_vertices.push_back(nVertex);
+
+								nVertex = v1Result;
+								nVertex.color = color;
+								polygon.m_vertices.push_back(nVertex);
+
+								nVertex = v2ResultN;
+								nVertex.color = color;
+								polygon.m_vertices.push_back(nVertex);
+
+								polyCenter += v1Result;
+								polyCenter += v2ResultN;
+								vertCount += 2;
+							}
+
+
+						}
+						if (v2Result != test[2].position)
+						{
+							sf::Vector2f v1ResultN;
+							sf::Vector2f v2ResultN;
+							if (LiangBarsky(CENTER - halfwidth, CENTER + halfwidth,
+								CENTER + halfwidth, CENTER - halfwidth,
+								test[0].position, test[2].position, v1ResultN, v2ResultN))
+							{
+								sf::Vertex nVertex;
+								nVertex = p1;
+								nVertex.color = color;
+								polygon.m_vertices.push_back(nVertex);
+
+								nVertex = v2Result;
+								nVertex.color = color;
+								polygon.m_vertices.push_back(nVertex);
+
+								nVertex = v2ResultN;
+								nVertex.color = color;
+								polygon.m_vertices.push_back(nVertex);
+
+								polyCenter += v2Result;
+								polyCenter += v2ResultN;
+								vertCount += 2;
+							}
+
+
+						}
+
+						test[1].position = v1Result;
+						test[2].position = v2Result;
+					}
+					else
+					{
+						bool passed = false;
+						if (LiangBarsky(CENTER - halfwidth, CENTER + halfwidth,
+							CENTER + halfwidth, CENTER - halfwidth,
+							test[0].position, test[2].position, v1Result, v2Result))
+						{
+							test[0].position = v1Result;
+							test[2].position = v2Result;
+							passed = true;
+						}
+						if (LiangBarsky(CENTER - halfwidth, CENTER + halfwidth,
+							CENTER + halfwidth, CENTER - halfwidth,
+							test[0].position, test[1].position, v1Result, v2Result))
+						{
+							test[0].position = v1Result;
+							test[1].position = v2Result;
+							passed = true;
+						}
+						if (!passed)
+							draw = false;
+					}
+
+#endif
+
+					if (draw)
+					{
+						polyCenter += test[1].position;
+						polyCenter += test[2].position;
+						vertCount += 2;
+						polygon.m_vertices.push_back(test[0]);
+						polygon.m_vertices.push_back(test[1]);
+						polygon.m_vertices.push_back(test[2]);
+					}
+
+					half_edge = half_edge->next;
+					
+				} while (half_edge != start_Edge);
+				
+				polyCenter.x /= vertCount;
+				polyCenter.y /= vertCount;
+				polygon.m_center.setPosition(sf::Vector2f(points[site->l_index].x, points[site->l_index].y) - sf::Vector2f(polygon.m_center.getRadius(), polygon.m_center.getRadius()));
+				polygon.setOrigin(polyCenter);
+				polygon.setPosition(polyCenter+ GRAPHSPACING);
+				polygonsF.push_back(polygon);
+			}
 
 			std::vector<sf::Vertex*> lines;
+			std::vector<sf::Vertex*> linesF;
 			{
-
-
 				//TRIANGULATION
-				//int stride = 3;
-				//bool once = true;
-				//for (size_t i = 0; i < triangles.size(); i++)
-				//{
-				//	int offset = i * stride;
-				//	for (size_t k = 0; k < 3; k++)
-				//	{
-				//		sf::Vector2f* start = faceEdgePoints[offset + k]->point;
-				//		sf::Vector2f* end = faceEdgePoints[offset + (k + 1) % 3]->point;
+				/*int stride = 3;
+				bool once = true;
+				for (size_t i = 0; i < triangles.size(); i++)
+				{
+					int offset = i * stride;
+					for (size_t k = 0; k < 3; k++)
+					{
+						sf::Vector2f* start = faceEdgePoints[offset + k]->point;
+						sf::Vector2f* end = faceEdgePoints[offset + (k + 1) % 3]->point;
 
-				//		sf::Vertex* test = DBG_NEW sf::Vertex[2];
-				//		test[0] = sf::Vector2f(start->x, start->y);
-				//		test[1] = sf::Vector2f(end->x, end->y);
-				//		lines.push_back(test);
-				//		lines.back()[0].color = sf::Color(0, 255, 0);
-				//		lines.back()[1].color = sf::Color(0, 255, 0);
-				//	}
-				//}
+						sf::Vertex* test = DBG_NEW sf::Vertex[2];
+						test[0] = sf::Vector2f(start->x, start->y) - GRAPHSPACING;
+						test[1] = sf::Vector2f(end->x, end->y) - GRAPHSPACING;
+						lines.push_back(test);
+						lines.back()[0].color = sf::Color(0, 255, 0);
+						lines.back()[1].color = sf::Color(0, 255, 0);
+					}
+				}*/
 
 				//FORTUNES VORONOI EDGES
 				for (size_t i = 0; i < halfedges.size(); ++i) {
@@ -692,39 +831,30 @@ int main()
 					std::vector<double> x(2, 0.0), y(2, 0.0);
 					initEdgePointsVis(h, x, y, points);
 					sf::Vertex* test = new sf::Vertex[2];
-					test[0] = sf::Vector2f(float(x[0]), float(y[0]));
-					test[1] = sf::Vector2f(float(x[1]), float(y[1]));
-					lines.push_back(test);
+					test[0] = sf::Vector2f(float(x[0]), float(y[0])) + GRAPHSPACING;
+					test[1] = sf::Vector2f(float(x[1]), float(y[1])) + GRAPHSPACING;
+					linesF.push_back(test);
+					linesF.back()[0].color = sf::Color(255, 255, 0);
+					linesF.back()[1].color = sf::Color(255, 255, 0);
 				}
 
+				// BOWYER-WATSON VORONOI EDGES
+				for (size_t i = 0; i < allVoronoiEdges.size(); ++i) {
+					VoronoiEdge* h = allVoronoiEdges[i];
 
-
-				//for (size_t i = 0; i < faceList.size(); i++)
-				//{
-				//	//if (faceList[i]->radius < MAXSIZE)
-				//	{
-				//		sf::CircleShape point;
-				//		point.setRadius(faceList[i]->radius);
-				//		point.setPosition(faceList[i]->circumCenter - sf::Vector2f(faceList[i]->radius, faceList[i]->radius));
-				//		point.setOutlineThickness(1.0f);
-				//		point.setOutlineColor({ 255,0,255 });
-				//		point.setFillColor(sf::Color::Transparent);
-				//		circumPoints.push_back(point);
-
-				//		sf::CircleShape point;
-				//		point.setRadius(2);
-				//		point.setPosition(faceList[i]->circumCenter - sf::Vector2f(2, 2));
-				//		point.setFillColor({ 0,0,255 });
-				//		circumPoints.push_back(point);
-				//	}
-				//}
-
+					sf::Vertex* test = new sf::Vertex[2];
+					test[0] = sf::Vector2f(h->v1.x, h->v1.y) - GRAPHSPACING;
+					test[1] = sf::Vector2f(h->v2.x, h->v2.y) - GRAPHSPACING;
+					lines.push_back(test);
+					lines.back()[0].color = sf::Color(0, 255, 0);
+					lines.back()[1].color = sf::Color(0, 255, 0);
+				}
 			}
 
 
 			sf::RectangleShape rect;
 			rect.setFillColor(sf::Color::Transparent);
-			rect.setOutlineThickness(2);
+			rect.setOutlineThickness(100);
 			rect.setOutlineColor({ 255,255,255 });
 			rect.setSize({ float(MAXSIZE),float(MAXSIZE) });
 			rect.setPosition({ float(MINSIZE), float(MINSIZE) });
@@ -732,22 +862,38 @@ int main()
 			std::vector<sf::Vector2f> distances;
 			for (auto &polygon : polygons)
 			{
-
 				distances.push_back(normalize(polygon.m_center.getPosition() - sf::Vector2f(CENTER, CENTER)).first);
+				distances.back().x *= 100;
+				distances.back().y *= 100;
 			}
 
-			/*for (auto seeds : BWpoints)
+			for (auto seeds : BWpoints)
 			{
 				sf::CircleShape point;
-						point.setRadius(2);
-						point.setPosition(seeds->getCoordinates() - sf::Vector2f(2, 2));
-						point.setFillColor({ 0,0,255 });
+						point.setRadius(100);
+						point.setPosition(seeds->getCoordinates() - sf::Vector2f(100,100));
+						point.setFillColor({ 0,0,100 });
 						seedPoints.push_back(point);
-			}*/
+			}
+
+			
+
 			double dt = 1 / 60;
 			double timer = 0;
 			bool seperate = false;
-			sf::RenderWindow window(sf::VideoMode(1000, 1000), "SFML works!");
+			sf::ContextSettings settings;
+			settings.antialiasingLevel = 16;
+			sf::RenderWindow window(sf::VideoMode(1000, 1000), "Voronoi Tesselation", sf::Style::Default, settings);
+			sf::Vector2f oldPos;
+			bool moving = false;
+			bool showFortune = false;
+			float zoom = 20;
+
+			// Retrieve the window's default view
+			sf::View view = window.getDefaultView();
+			view.setCenter(sf::Vector2f(CENTER, CENTER));
+			view.zoom(zoom);
+			window.setView(view);
 			while (window.isOpen())
 			{
 				start = std::chrono::system_clock::now();
@@ -762,11 +908,65 @@ int main()
 					case sf::Event::KeyPressed:
 						if (event.key.code == sf::Keyboard::Escape)
 							window.close();
+						if (event.key.code == sf::Keyboard::Num1)
+							showFortune = false;
+						if (event.key.code == sf::Keyboard::Num2)
+							showFortune = true;
+						break;
+					case sf::Event::MouseButtonPressed:
+						// Mouse button is pressed, get the position and set moving as active
+						if (event.mouseButton.button == 0) {
+							moving = true;
+							oldPos = window.mapPixelToCoords(sf::Vector2i(event.mouseButton.x, event.mouseButton.y));
+						}
+						break;
+					case  sf::Event::MouseButtonReleased:
+						// Mouse button is released, no longer move
+						if (event.mouseButton.button == 0) {
+							moving = false;
+						}
+						break;
+					case sf::Event::MouseMoved:
+					{
+						// Ignore mouse movement unless a button is pressed (see above)
+						if (!moving)
+							break;
+						// Determine the new position in world coordinates
+						const sf::Vector2f newPos = window.mapPixelToCoords(sf::Vector2i(event.mouseMove.x, event.mouseMove.y));
+						// Determine how the cursor has moved
+						// Swap these to invert the movement direction
+						const sf::Vector2f deltaPos = oldPos - newPos;
+
+						// Move our view accordingly and update the window
+						view.setCenter(view.getCenter() + deltaPos);
+						window.setView(view);
+
+						// Save the new position as the old one
+						// We're recalculating this, since we've changed the view
+						oldPos = window.mapPixelToCoords(sf::Vector2i(event.mouseMove.x, event.mouseMove.y));
+						break;
+					}
+					case sf::Event::MouseWheelScrolled:
+						// Ignore the mouse wheel unless we're not moving
+						if (moving)
+							break;
+
+						// Determine the scroll direction and adjust the zoom level
+						// Again, you can swap these to invert the direction
+						if (event.mouseWheelScroll.delta <= -1)
+							zoom = std::min(70.f, zoom + 1.0f);
+						else if (event.mouseWheelScroll.delta >= 1)
+							zoom = std::max(.5f, zoom - 1.0f);
+
+						// Update our view
+						view.setSize(window.getDefaultView().getSize()); // Reset the size
+						view.zoom(zoom); // Apply the zoom level (this transforms the view)
+						window.setView(view);
 						break;
 					}
 				}
 
-				window.clear();
+				window.clear({ 255,255,255 });
 
 				if (seperate)
 					for (int i = 0; i < polygons.size(); i++)
@@ -774,27 +974,44 @@ int main()
 						polygons[i].move(distances[i] * 0.01f);
 					}
 
-				for (int i = 0; i < polygons.size(); i++)
+				if (showFortune)
 				{
-					window.draw(polygons[i]);
+					for (int i = 0; i < polygonsF.size(); i++)
+					{
+						window.draw(polygonsF[i]);
+					}
+
+					if(!seperate)
+						for (auto line : linesF)
+							window.draw(line, 2, sf::Lines);
+				}
+				else
+				{
+					for (int i = 0; i < polygons.size(); i++)
+					{
+						window.draw(polygons[i]);
+					}
+					if (!seperate)
+						for (auto line : lines)
+							window.draw(line, 2, sf::Lines);
 				}
 
-				for (auto line : lines)
-					window.draw(line, 2, sf::Lines);
+				
 
-				for (auto point : seedPoints)
+				/*for (auto point : seedPoints)
 					window.draw(point);
-
-				if (!seperate)
-					window.draw(rect);
+*/
+			/*	if (!seperate)
+					window.draw(rect);*/
 				window.display();
 
 				std::chrono::duration<double> elapsed_seconds = std::chrono::system_clock::now() - start;
 				dt = elapsed_seconds.count();
 				timer += dt;
-				(timer > 4) ? seperate = true : NULL;
+				//(timer > 4) ? seperate = true : NULL;
 
 			}
+
 			for (auto &line : lines)
 			{
 				delete line;
@@ -817,6 +1034,19 @@ int main()
 			}
 			allVoronoiEdges.clear();
 			
+			//Fortune
+			for (int k = 0; k < vertices.size(); k++)
+			{
+				delete vertices[k];
+			}
+			for (int k = 0; k < halfedges.size(); k++)
+			{
+				delete halfedges[k];
+			}
+			halfedges.clear();
+			faces.clear();
+			vertices.clear();
+
 			
 
 			if (RENDERING)
@@ -836,16 +1066,16 @@ int main()
 		perfData[perfDataIndex].Seeds = SEEDS;
 		SEEDS += SEEDINCREMENT;
 
-		std::cout << "Fortune elapsed time: " << perfData[perfDataIndex].FortunesTime << "s\n";
-		std::cout << "Bowyer elapsed time: " << perfData[perfDataIndex].BowyerTriangulation << "s\n";
-		std::cout << "TriToVoronoi elapsed time: " << perfData[perfDataIndex].TriToVoronoi << "s\n";
+		/*std::cout << "Fortune elapsed time: " << perfData[perfDataIndex].FortunesTime << "s\n" << 
+			"Bowyer elapsed time: " << perfData[perfDataIndex].BowyerTriangulation << "s\n" << 
+			"TriToVoronoi elapsed time: " << perfData[perfDataIndex].TriToVoronoi << "s\n";*/
 		perfDataIndex++;
 		if (RENDERING)
 			break;
 	}
 	if (!RENDERING && !DEBUG)
 		WriteToFile();
-	//_CrtDumpMemoryLeaks();
+	_CrtDumpMemoryLeaks();
 	return 0; 
 }
 
@@ -1075,7 +1305,7 @@ void suthHodgClip(int poly_points[][2], int poly_size,
 #endif
 
 // Liang-Barsky function by Daniel White @ http://www.skytopia.com/project/articles/compsci/clipping.html
-// This function inputs 8 numbers, and outputs 4 DBG_NEW numbers (plus a boolean value to say whether the clipped line is drawn at all).
+// This function inputs 8 numbers, and outputs 4 new numbers (plus a boolean value to say whether the clipped line is drawn at all).
 //
 bool LiangBarsky(double edgeLeft, double edgeRight, double edgeBottom, double edgeTop,   // Define the x/y clipping values for the border.
 	sf::Vector2f src0, sf::Vector2f src1,                 // Define the start and end points of the line.
